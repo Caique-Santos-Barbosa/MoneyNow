@@ -6,6 +6,9 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# Instalar OpenSSL para Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 # Copiar arquivos de dependências
 COPY package.json ./
 COPY prisma ./prisma/
@@ -22,6 +25,9 @@ RUN npx prisma generate
 FROM node:20-slim
 
 WORKDIR /app
+
+# Instalar OpenSSL para Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Instalar apenas dependências de produção
 COPY package.json ./
