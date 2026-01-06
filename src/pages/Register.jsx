@@ -350,6 +350,7 @@ export default function Register() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                      autoComplete="email"
                     />
                   </div>
                   {errors.email && (
@@ -369,6 +370,7 @@ export default function Register() {
                       value={formData.emailConfirmation}
                       onChange={(e) => setFormData({ ...formData, emailConfirmation: e.target.value })}
                       className={`pl-10 pr-10 ${errors.emailConfirmation ? 'border-red-500' : ''}`}
+                      autoComplete="email"
                     />
                     {formData.emailConfirmation && formData.email === formData.emailConfirmation && (
                       <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00D68F]" />
@@ -391,6 +393,7 @@ export default function Register() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -435,6 +438,7 @@ export default function Register() {
                       value={formData.passwordConfirmation}
                       onChange={(e) => setFormData({ ...formData, passwordConfirmation: e.target.value })}
                       className={`pl-10 pr-10 ${errors.passwordConfirmation ? 'border-red-500' : ''}`}
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"

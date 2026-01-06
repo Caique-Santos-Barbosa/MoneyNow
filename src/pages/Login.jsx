@@ -132,6 +132,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                  autoComplete="email"
                   autoFocus
                 />
               </div>
@@ -159,6 +160,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
