@@ -103,6 +103,12 @@ export async function register(req, res, next) {
       user: userWithoutPassword
     });
   } catch (error) {
+    console.error('=== REGISTER FUNCTION ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error name:', error.name);
+    console.error('Error stack (first 500 chars):', error.stack?.substring(0, 500));
     next(error);
   }
 }
