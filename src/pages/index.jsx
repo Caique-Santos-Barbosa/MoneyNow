@@ -14,7 +14,7 @@ import Register from "./Register";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -65,20 +65,6 @@ function PublicRoute({ children }) {
 
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
-    const location = useLocation();
-    const currentPage = _getCurrentPage(location.pathname);
-    
-    // Páginas que não usam Layout (auth pages)
-    const isAuthPage = 
-        location.pathname === '/Login' || 
-        location.pathname === '/login' ||
-        location.pathname === '/Register' || 
-        location.pathname === '/register' ||
-        location.pathname === '/ForgotPassword' ||
-        location.pathname === '/forgot-password' ||
-        location.pathname === '/ResetPassword' ||
-        location.pathname === '/reset-password';
-    
     return (
         <Routes>
             {/* Rotas públicas (auth) */}
