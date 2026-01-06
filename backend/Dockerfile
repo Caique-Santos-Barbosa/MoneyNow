@@ -33,7 +33,7 @@ RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists
 COPY package.json ./
 RUN npm install --only=production
 
-# Copiar Prisma
+# Copiar Prisma (incluindo migrações)
 COPY prisma ./prisma/
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma/
 
