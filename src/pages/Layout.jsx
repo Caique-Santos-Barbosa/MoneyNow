@@ -67,15 +67,27 @@ export default function Layout({ children, currentPageName }) {
 
   const handleLogout = async () => {
     try {
-      await base44.auth.logout();
+      // Limpar token e usuário do localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
-      // Recarregar a página após logout
-      window.location.reload();
+      
+      // Tentar logout do Base44 se ainda estiver configurado
+      try {
+        await base44.auth.logout();
+      } catch (error) {
+        // Ignorar erro se Base44 não estiver disponível
+      }
+      
+      // Redirecionar para login
+      window.location.href = '/Login';
     } catch (error) {
       console.error('Error logging out:', error);
-      // Mesmo com erro, limpar estado local
+      // Mesmo com erro, limpar estado local e redirecionar
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
-      window.location.reload();
+      window.location.href = '/Login';
     }
   };
 

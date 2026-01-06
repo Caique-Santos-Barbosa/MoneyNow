@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,27 +44,8 @@ export default function Login() {
     }
 
     try {
-      // TODO: Substituir pela API real quando backend estiver pronto
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, rememberMe })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao fazer login');
-      }
-
-      // Salvar token e redirecionar
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-      
-      navigate('/Dashboard');
-
+      await login(email, password, rememberMe);
+      // O redirecionamento é feito automaticamente pelo AuthContext
     } catch (error) {
       setErrors({ general: error.message || 'Erro ao fazer login. Tente novamente.' });
     } finally {
@@ -162,7 +144,7 @@ export default function Login() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
                 <Link 
-                  to="/forgot-password" 
+                  to="/ForgotPassword" 
                   className="text-sm text-[#00D68F] hover:underline font-medium"
                 >
                   Esqueci minha senha
