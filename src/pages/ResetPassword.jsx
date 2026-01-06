@@ -41,15 +41,38 @@ export default function ResetPassword() {
         body: JSON.stringify({ token })
       });
 
-      if (response.ok) {
-        setTokenValid(true);
+      // Verificar se a resposta é JSON antes de fazer parse
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (response.ok) {
+          setTokenValid(true);
+        } else {
+          setTokenValid(false);
+          setError(data.message || data.error || 'Token inválido ou expirado');
+        }
       } else {
+        // Se não for JSON, pode ser erro do servidor (HTML)
+        const text = await response.text();
+        console.error('Resposta não-JSON recebida:', text.substring(0, 200));
+        
         setTokenValid(false);
-        setError('Token inválido ou expirado');
+        if (response.status === 404) {
+          setError('Serviço de validação não encontrado. O backend ainda não está disponível.');
+        } else {
+          setError('Erro ao validar token. O backend pode não estar configurado corretamente.');
+        }
       }
     } catch (err) {
+      console.error('Erro ao validar token:', err);
       setTokenValid(false);
-      setError('Erro ao validar token');
+      
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setError('Não foi possível conectar ao servidor. Verifique sua conexão.');
+      } else {
+        setError('Erro ao validar token');
+      }
     } finally {
       setIsValidating(false);
     }
@@ -85,10 +108,28 @@ export default function ResetPassword() {
         body: JSON.stringify({ token, password })
       });
 
-      const data = await response.json();
+      // Verificar se a resposta é JSON antes de fazer parse
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Se não for JSON, pode ser erro do servidor (HTML)
+        const text = await response.text();
+        console.error('Resposta não-JSON recebida:', text.substring(0, 200));
+        
+        if (response.status === 404) {
+          throw new Error('Serviço de redefinição de senha não encontrado. O backend ainda não está disponível.');
+        } else if (response.status >= 500) {
+          throw new Error('Erro no servidor. Tente novamente mais tarde.');
+        } else {
+          throw new Error('Resposta inválida do servidor. Verifique se o backend está configurado corretamente.');
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Erro ao redefinir senha');
+        throw new Error(data.message || data.error || 'Erro ao redefinir senha');
       }
 
       setSuccess(true);
@@ -99,7 +140,18 @@ export default function ResetPassword() {
       }, 3000);
 
     } catch (err) {
-      setError(err.message || 'Erro ao redefinir senha. Tente novamente.');
+      console.error('Erro ao redefinir senha:', err);
+      
+      // Mensagens de erro mais amigáveis
+      let errorMessage = err.message || 'Erro ao redefinir senha. Tente novamente.';
+      
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão e se o backend está rodando.';
+      } else if (err.message.includes('JSON')) {
+        errorMessage = 'Erro de comunicação com o servidor. O backend pode não estar configurado corretamente.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -160,17 +160,46 @@ export default function Register() {
         body: formDataToSend
       });
 
-      const data = await response.json();
+      // Verificar se a resposta é JSON antes de fazer parse
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Se não for JSON, pode ser erro do servidor (HTML)
+        const text = await response.text();
+        console.error('Resposta não-JSON recebida:', text.substring(0, 200));
+        
+        if (response.status === 404) {
+          throw new Error('Serviço de registro não encontrado. O backend ainda não está disponível.');
+        } else if (response.status >= 500) {
+          throw new Error('Erro no servidor. Tente novamente mais tarde.');
+        } else {
+          throw new Error('Resposta inválida do servidor. Verifique se o backend está configurado corretamente.');
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Erro ao criar conta');
+        throw new Error(data.message || data.error || 'Erro ao criar conta');
       }
 
       // Redirecionar para login
       navigate('/Login?registered=true');
 
     } catch (error) {
-      setErrors({ ...errors, general: error.message || 'Erro ao criar conta' });
+      console.error('Erro no registro:', error);
+      
+      // Mensagens de erro mais amigáveis
+      let errorMessage = error.message || 'Erro ao criar conta';
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão e se o backend está rodando.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'Erro de comunicação com o servidor. O backend pode não estar configurado corretamente.';
+      }
+      
+      setErrors({ ...errors, general: errorMessage });
     } finally {
       setIsLoading(false);
     }
