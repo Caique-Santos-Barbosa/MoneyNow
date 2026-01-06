@@ -59,11 +59,24 @@ export default function Layout({ children, currentPageName }) {
       setUser(userData);
     } catch (error) {
       console.error('Error loading user:', error);
+      // Com requiresAuth: false, não redireciona automaticamente
+      // A aplicação continua funcionando mesmo sem usuário autenticado
+      setUser(null);
     }
   };
 
   const handleLogout = async () => {
-    await base44.auth.logout();
+    try {
+      await base44.auth.logout();
+      setUser(null);
+      // Recarregar a página após logout
+      window.location.reload();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      // Mesmo com erro, limpar estado local
+      setUser(null);
+      window.location.reload();
+    }
   };
 
   const getGreeting = () => {
