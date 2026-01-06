@@ -66,6 +66,11 @@ export async function register(req, res, next) {
     });
 
     // Gerar token
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET não configurado');
+      return res.status(500).json({ message: 'Erro de configuração do servidor' });
+    }
+    
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
