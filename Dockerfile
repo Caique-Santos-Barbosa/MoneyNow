@@ -5,17 +5,17 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar arquivos de dependências
-COPY package.json package-lock.json* ./
+# Copiar arquivos de dependências primeiro (para cache do Docker)
+COPY package.json ./
 
-# Instalar dependências
-RUN npm ci --only=production=false
+# Instalar dependências (incluindo devDependencies necessárias para build)
+RUN npm install
 
 # Copiar código fonte
 COPY . .
 
 # Build args para variáveis de ambiente (Vite precisa em build-time)
-ARG VITE_BASE44_APP_ID
+ARG VITE_BASE44_APP_ID=695b2ab55b0764f0c9f239e8
 ENV VITE_BASE44_APP_ID=$VITE_BASE44_APP_ID
 
 # Build da aplicação
