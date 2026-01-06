@@ -79,76 +79,95 @@ function PagesContent() {
         location.pathname === '/ResetPassword' ||
         location.pathname === '/reset-password';
     
-    if (isAuthPage) {
-        return (
-            <Routes>
-                <Route path="/Login" element={<PublicRoute><Login /></PublicRoute>} />
-                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-                <Route path="/Register" element={<PublicRoute><Register /></PublicRoute>} />
-                <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-                <Route path="/ForgotPassword" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-                <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-                <Route path="/ResetPassword" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-                <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-            </Routes>
-        );
-    }
-    
     return (
-        <Layout currentPageName={currentPage}>
-            <Routes>
-                <Route path="/" element={
-                    <ProtectedRoute>
-                        <Navigate to="/Dashboard" replace />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Accounts" element={
-                    <ProtectedRoute>
+        <Routes>
+            {/* Rotas públicas (auth) */}
+            <Route path="/Login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/Register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/ForgotPassword" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/ResetPassword" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+            
+            {/* Rotas protegidas */}
+            <Route path="/" element={
+                <ProtectedRoute>
+                    <Navigate to="/Dashboard" replace />
+                </ProtectedRoute>
+            } />
+            <Route path="/Accounts" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Accounts">
                         <Accounts />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Budget" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Budget" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Budget">
                         <Budget />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Cards" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Cards" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Cards">
                         <Cards />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Dashboard" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Dashboard" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Dashboard">
                         <Dashboard />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Goals" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Goals" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Goals">
                         <Goals />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Premium" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Premium" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Premium">
                         <Premium />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Reports" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Reports" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Reports">
                         <Reports />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Settings" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Settings" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Settings">
                         <Settings />
-                    </ProtectedRoute>
-                } />
-                <Route path="/Transactions" element={
-                    <ProtectedRoute>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            <Route path="/Transactions" element={
+                <ProtectedRoute>
+                    <Layout currentPageName="Transactions">
                         <Transactions />
-                    </ProtectedRoute>
-                } />
-            </Routes>
-        </Layout>
+                    </Layout>
+                </ProtectedRoute>
+            } />
+            
+            {/* Rota catch-all - redireciona para Login se não autenticado */}
+            <Route path="*" element={
+                <ProtectedRoute>
+                    <Navigate to="/Dashboard" replace />
+                </ProtectedRoute>
+            } />
+        </Routes>
     );
 }
 
