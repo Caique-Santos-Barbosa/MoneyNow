@@ -6,8 +6,10 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Instalar OpenSSL para Prisma
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Instalar OpenSSL 1.1 e dependências para Prisma
+RUN apt-get update -y && \
+    apt-get install -y openssl libssl-dev ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copiar arquivos de dependências
 COPY package.json ./
@@ -18,16 +20,20 @@ RUN npm install
 
 # Gerar Prisma Client (usa DATABASE_URL temporária apenas para gerar o client)
 # O Prisma precisa de uma URL válida para validar o schema, mas não conecta ao banco
+# Forçar uso de openssl-3.0.x que está disponível no Debian
 ENV DATABASE_URL="postgresql://user:password@localhost:5432/db?schema=public"
-RUN npx prisma generate
+ENV PRISMA_QUERY_ENGINE_LIBRARY="/app/node_modules/.prisma/client/libquery_engine-debian-openssl-3.0.x.so.node"
+RUN npx prisma generate --generator client
 
 # Stage 2: Production
 FROM node:20-slim
 
 WORKDIR /app
 
-# Instalar OpenSSL para Prisma
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Instalar OpenSSL e dependências para Prisma
+RUN apt-get update -y && \
+    apt-get install -y openssl libssl-dev ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 # Instalar apenas dependências de produção
 COPY package.json ./
