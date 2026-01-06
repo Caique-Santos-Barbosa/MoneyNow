@@ -20,10 +20,9 @@ RUN npm install
 
 # Gerar Prisma Client (usa DATABASE_URL temporária apenas para gerar o client)
 # O Prisma precisa de uma URL válida para validar o schema, mas não conecta ao banco
-# Forçar uso de openssl-3.0.x que está disponível no Debian
+# O schema.prisma já está configurado para usar openssl-3.0.x
 ENV DATABASE_URL="postgresql://user:password@localhost:5432/db?schema=public"
-ENV PRISMA_QUERY_ENGINE_LIBRARY="/app/node_modules/.prisma/client/libquery_engine-debian-openssl-3.0.x.so.node"
-RUN npx prisma generate --generator client
+RUN npx prisma generate
 
 # Stage 2: Production
 FROM node:20-slim
