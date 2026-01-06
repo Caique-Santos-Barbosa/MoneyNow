@@ -27,20 +27,26 @@ FROM nginx:alpine
 # Copiar arquivos buildados
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copiar configuração do nginx como template
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# Copiar configuração do nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiar script de entrada customizado
+COPY docker-entrypoint.sh /docker-entrypoint-custom.sh
+RUN chmod +x /docker-entrypoint-custom.sh
 
 # Variável de ambiente padrão para desenvolvimento local (Docker Compose)
 # No EasyPanel, configure BACKEND_URL com a URL do seu backend
 # Exemplo: BACKEND_URL=http://moneynow-backend:3001
+# Ou use a URL externa: BACKEND_URL=https://api.seu-dominio.com
 ENV BACKEND_URL=http://backend:3001
 
-# Instalar wget para healthcheck
-RUN apk add --no-cache wget
+# Instalar wget e sed para healthcheck e substituição
+RUN apk add --no-cache wget sed
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
-# Iniciar nginx (o nginx:alpine já processa templates automaticamente)
+# Usar script de entrada customizado
+ENTRYPOINT ["/docker-entrypoint-custom.sh"]
 CMD ["nginx", "-g", "daemon off;"]
