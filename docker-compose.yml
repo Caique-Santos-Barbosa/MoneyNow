@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  moneynow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moneynow-app
+    ports:
+      - "3000:80"
+    environment:
+      # Variáveis de ambiente podem ser passadas aqui se necessário
+      # Para aplicações Vite, variáveis VITE_* precisam ser definidas no build
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
