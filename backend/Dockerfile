@@ -1,7 +1,8 @@
 # Multi-stage build para otimizar tamanho da imagem final
+# Usando node:20 (Debian) em vez de Alpine para compatibilidade com Prisma/OpenSSL
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +19,7 @@ ENV DATABASE_URL="postgresql://user:password@localhost:5432/db?schema=public"
 RUN npx prisma generate
 
 # Stage 2: Production
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
