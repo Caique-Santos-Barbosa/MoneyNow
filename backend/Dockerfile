@@ -43,6 +43,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Comando para iniciar com retry nas migrações (aguarda banco estar disponível)
+# Comando para iniciar (aguarda banco, executa migrações e inicia servidor)
 # A DATABASE_URL real será fornecida via variável de ambiente no runtime
-CMD ["sh", "-c", "until npx prisma migrate deploy 2>/dev/null; do echo 'Waiting for database...'; sleep 2; done && node src/server.js"]
+CMD ["sh", "-c", "node src/wait-for-db.js && npx prisma migrate deploy && node src/server.js"]
