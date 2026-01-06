@@ -14,8 +14,15 @@ export async function register(req, res, next) {
     const { name, email, password, cpf } = req.body;
     const photo = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Log para debug (remover em produção)
-    console.log('Register request:', { name, email, hasPassword: !!password, hasCPF: !!cpf, hasPhoto: !!req.file });
+    // Log para debug
+    console.log('Register request received:', { 
+      hasName: !!name, 
+      hasEmail: !!email, 
+      hasPassword: !!password, 
+      hasCPF: !!cpf, 
+      hasPhoto: !!req.file,
+      bodyKeys: Object.keys(req.body)
+    });
 
     // Validações
     if (!name || !email || !password) {
@@ -55,6 +62,7 @@ export async function register(req, res, next) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Criar usuário
+    console.log('Creating user in database...');
     const user = await prisma.user.create({
       data: {
         name,
@@ -64,6 +72,7 @@ export async function register(req, res, next) {
         photo
       }
     });
+    console.log('User created successfully:', { id: user.id, email: user.email });
 
     // Gerar token
     if (!process.env.JWT_SECRET) {

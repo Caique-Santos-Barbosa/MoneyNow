@@ -1,6 +1,11 @@
 export function errorHandler(err, req, res, next) {
-  console.error('Error:', err);
+  console.error('=== ERROR HANDLER ===');
+  console.error('Error message:', err.message);
+  console.error('Error code:', err.code);
+  console.error('Error name:', err.name);
   console.error('Error stack:', err.stack);
+  console.error('Request path:', req.path);
+  console.error('Request method:', req.method);
 
   // Erro de validação do Prisma
   if (err.code === 'P2002') {

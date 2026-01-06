@@ -6,7 +6,13 @@ import upload from '../middleware/upload.js';
 const router = express.Router();
 
 // Public routes
-router.post('/register', upload.single('photo'), register);
+router.post('/register', upload.single('photo'), (req, res, next) => {
+  console.log('Register route hit');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Body:', req.body);
+  console.log('File:', req.file);
+  register(req, res, next);
+});
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/validate-reset-token', validateResetToken);
