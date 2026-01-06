@@ -10,8 +10,12 @@ const prisma = new PrismaClient();
 // Register
 export async function register(req, res, next) {
   try {
+    // Multer parseia FormData automaticamente, campos de texto vêm em req.body
     const { name, email, password, cpf } = req.body;
     const photo = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Log para debug (remover em produção)
+    console.log('Register request:', { name, email, hasPassword: !!password, hasCPF: !!cpf, hasPhoto: !!req.file });
 
     // Validações
     if (!name || !email || !password) {

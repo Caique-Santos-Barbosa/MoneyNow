@@ -14,6 +14,8 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+// IMPORTANTE: express.json() e express.urlencoded() devem vir ANTES das rotas
+// mas o multer processa FormData automaticamente, então não precisa de urlencoded para /api/auth/register
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
