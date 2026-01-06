@@ -63,16 +63,24 @@ export async function register(req, res, next) {
 
     // Criar usuário
     console.log('Creating user in database...');
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        cpf: cpf || null,
-        photo
-      }
-    });
-    console.log('User created successfully:', { id: user.id, email: user.email });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          cpf: cpf || null,
+          photo
+        }
+      });
+      console.log('User created successfully:', { id: user.id, email: user.email });
+    } catch (dbError) {
+      console.error('Database error creating user:', dbError);
+      console.error('Error code:', dbError.code);
+      console.error('Error message:', dbError.message);
+      throw dbError;
+    }
 
     // Gerar token
     if (!process.env.JWT_SECRET) {

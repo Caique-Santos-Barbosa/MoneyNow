@@ -38,5 +38,14 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'not set'}`);
+  console.log(`🔐 JWT_SECRET: ${process.env.JWT_SECRET ? 'Set' : 'NOT SET'}`);
+  console.log(`💾 DATABASE_URL: ${process.env.DATABASE_URL ? 'Set' : 'NOT SET'}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  process.exit(0);
 });
 
