@@ -505,7 +505,7 @@ export default function Register() {
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Resumo dos dados */}
-                <div className="bg-gray-50 rounded-xl p-6 space-y-4 relative">
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
                   {photoPreview && (
                     <div className="flex justify-center mb-4">
                       <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white">
@@ -513,6 +513,18 @@ export default function Register() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Botão Editar movido para cima */}
+                  <div className="flex justify-end mb-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStep(1)}
+                    >
+                      Editar
+                    </Button>
+                  </div>
                   
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
@@ -532,16 +544,6 @@ export default function Register() {
                       </div>
                     )}
                   </div>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setStep(1)}
-                    className="absolute top-4 right-4"
-                  >
-                    Editar
-                  </Button>
                 </div>
 
                 {/* Aceite de termos */}

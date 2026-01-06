@@ -30,6 +30,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copiar configuração do nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Nota: O nginx.conf está configurado para fazer proxy reverso para o backend
+# O backend deve estar rodando em um container separado ou em localhost:3001
+
 # Expor porta 80
 EXPOSE 80
 

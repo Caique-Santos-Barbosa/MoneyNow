@@ -1,16 +1,65 @@
 version: '3.8'
 
 services:
-  moneynow:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: moneynow-db
+    environment:
+      POSTGRES_USER: moneynow
+      POSTGRES_PASSWORD: moneynow_password
+      POSTGRES_DB: moneynow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moneynow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moneynow-backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://moneynow:moneynow_password@postgres:5432/moneynow?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-MoneyNow <noreply@moneynow.com>}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend/uploads:/app/uploads
+    command: sh -c "npx prisma migrate deploy && node src/server.js"
+
+  # Frontend
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: moneynow-app
+      args:
+        VITE_BASE44_APP_ID: ${VITE_BASE44_APP_ID:-695b2ab55b0764f0c9f239e8}
+    container_name: moneynow-frontend
     ports:
       - "3000:80"
-    environment:
-      # Variáveis de ambiente podem ser passadas aqui se necessário
-      # Para aplicações Vite, variáveis VITE_* precisam ser definidas no build
+    depends_on:
+      - backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
@@ -19,3 +68,5 @@ services:
       retries: 3
       start_period: 5s
 
+volumes:
+  postgres_data:
