@@ -14,18 +14,29 @@ if (!fs.existsSync(uploadsDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log('Multer destination:', uploadsDir);
+    console.log('Uploads dir exists:', fs.existsSync(uploadsDir));
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'photo-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = 'photo-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('Multer filename:', filename);
+    cb(null, filename);
   }
 });
 
 const fileFilter = (req, file, cb) => {
+  console.log('Multer fileFilter:', { 
+    fieldname: file.fieldname, 
+    originalname: file.originalname, 
+    mimetype: file.mimetype 
+  });
+  
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
+    console.log('File rejected - not an image');
     cb(new Error('Apenas imagens são permitidas'), false);
   }
 };
