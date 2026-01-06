@@ -8,8 +8,8 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Pages />
-        <Toaster />
+      <Pages />
+      <Toaster />
       </AuthProvider>
     </ErrorBoundary>
   )

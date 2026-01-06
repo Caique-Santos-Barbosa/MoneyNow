@@ -27,14 +27,13 @@ FROM nginx:alpine
 # Copiar arquivos buildados
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copiar configuração do nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copiar configuração do nginx como template
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
-# Nota: O nginx.conf está configurado para fazer proxy reverso para o backend
-# O backend deve estar rodando em um container separado ou em localhost:3001
-
-# Expor porta 80
-EXPOSE 80
+# Variável de ambiente padrão para desenvolvimento local (Docker Compose)
+# No EasyPanel, configure BACKEND_URL com a URL do seu backend
+# Exemplo: BACKEND_URL=http://moneynow-backend:3001
+ENV BACKEND_URL=http://backend:3001
 
 # Instalar wget para healthcheck
 RUN apk add --no-cache wget
@@ -43,6 +42,5 @@ RUN apk add --no-cache wget
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
-# Iniciar nginx
+# Iniciar nginx (o nginx:alpine já processa templates automaticamente)
 CMD ["nginx", "-g", "daemon off;"]
-

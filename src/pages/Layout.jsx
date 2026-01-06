@@ -74,7 +74,7 @@ export default function Layout({ children, currentPageName }) {
       
       // Tentar logout do Base44 se ainda estiver configurado
       try {
-        await base44.auth.logout();
+    await base44.auth.logout();
       } catch (error) {
         // Ignorar erro se Base44 não estiver disponível
       }

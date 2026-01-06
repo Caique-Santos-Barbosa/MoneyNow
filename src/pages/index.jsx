@@ -66,7 +66,7 @@ function PublicRoute({ children }) {
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
     return (
-        <Routes>
+            <Routes>            
             {/* Rotas públicas (auth) */}
             <Route path="/Login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
@@ -153,7 +153,7 @@ function PagesContent() {
                     <Navigate to="/Dashboard" replace />
                 </ProtectedRoute>
             } />
-        </Routes>
+            </Routes>
     );
 }
 

@@ -17,10 +17,8 @@ server {
     }
 
     # Proxy para API backend
-    # IMPORTANTE: No EasyPanel, configure a variável BACKEND_URL com a URL do seu backend
-    # Exemplo: BACKEND_URL=http://moneynow-backend:3001 ou BACKEND_URL=https://api.seu-dominio.com
+    # Usa variável de ambiente BACKEND_URL (padrão: http://backend:3001 para Docker Compose)
     location /api {
-        resolver 127.0.0.11 valid=30s;
         set $backend_url ${BACKEND_URL};
         proxy_pass $backend_url;
         proxy_http_version 1.1;
@@ -54,3 +52,4 @@ server {
     # Error pages
     error_page 404 /index.html;
 }
+
