@@ -5,9 +5,6 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Instalar OpenSSL para Prisma
-RUN apk add --no-cache openssl1.1-compat
-
 # Copiar arquivos de dependências
 COPY package.json ./
 COPY prisma ./prisma/
@@ -16,6 +13,7 @@ COPY prisma ./prisma/
 RUN npm install
 
 # Gerar Prisma Client (usa DATABASE_URL temporária apenas para gerar o client)
+# O Prisma precisa de uma URL válida para validar o schema, mas não conecta ao banco
 ENV DATABASE_URL="postgresql://user:password@localhost:5432/db?schema=public"
 RUN npx prisma generate
 
@@ -23,9 +21,6 @@ RUN npx prisma generate
 FROM node:20-alpine
 
 WORKDIR /app
-
-# Instalar OpenSSL e PostgreSQL client para aguardar banco
-RUN apk add --no-cache openssl1.1-compat postgresql-client
 
 # Instalar apenas dependências de produção
 COPY package.json ./
@@ -41,23 +36,6 @@ COPY src ./src
 # Criar pasta de uploads
 RUN mkdir -p uploads
 
-# Criar script para aguardar banco estar disponível
-RUN echo '#!/bin/sh\n\
-set -e\n\
-\n\
-host="$1"\n\
-user="$2"\n\
-shift 2\n\
-cmd="$@"\n\
-\n\
-until pg_isready -h "$host" -p 5432 -U "$user"; do\n\
-  >&2 echo "PostgreSQL is unavailable - sleeping"\n\
-  sleep 2\n\
-done\n\
-\n\
->&2 echo "PostgreSQL is up - executing command"\n\
-exec $cmd' > /wait-for-postgres.sh && chmod +x /wait-for-postgres.sh
-
 # Expor porta
 EXPOSE 3001
 
@@ -65,7 +43,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Comando para iniciar (aguarda banco, executa migrações e inicia servidor)
+# Comando para iniciar com retry nas migrações (aguarda banco estar disponível)
 # A DATABASE_URL real será fornecida via variável de ambiente no runtime
-CMD ["sh", "-c", "/wait-for-postgres.sh projetos_pessoais_moneynow-db moneynow npx prisma migrate deploy && node src/server.js"]
-
+CMD ["sh", "-c", "until npx prisma migrate deploy 2>/dev/null; do echo 'Waiting for database...'; sleep 2; done && node src/server.js"]
