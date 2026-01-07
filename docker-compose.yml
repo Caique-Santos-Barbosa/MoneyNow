@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/uploads
-    command: sh -c "npx prisma migrate deploy && node src/server.js"
+    command: sh -c "node src/wait-for-db.js && npx prisma migrate deploy && node src/server.js"
 
   # Frontend
   frontend:
