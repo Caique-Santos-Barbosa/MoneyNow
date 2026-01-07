@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatCPF, validateCPF } from '@/utils/masks';
 import { validateEmail, validatePassword, validateName, getPasswordStrengthText } from '@/utils/validations';
+import api from '@/api/config';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -154,11 +155,7 @@ export default function Register() {
         formDataToSend.append('photo', formData.photo);
       }
 
-      // TODO: Substituir pela API real quando backend estiver pronto
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        body: formDataToSend
-      });
+      const response = await api.register(formDataToSend);
 
       // Verificar se a resposta é JSON antes de fazer parse
       const contentType = response.headers.get('content-type');

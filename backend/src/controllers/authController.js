@@ -39,7 +39,7 @@ export async function register(req, res, next) {
     }
 
     // Verificar se email já existe
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.User.findUnique({
       where: { email }
     });
 
@@ -49,7 +49,7 @@ export async function register(req, res, next) {
 
     // Verificar CPF se fornecido
     if (cpf) {
-      const existingCPF = await prisma.user.findUnique({
+      const existingCPF = await prisma.User.findUnique({
         where: { cpf }
       });
 
@@ -65,7 +65,7 @@ export async function register(req, res, next) {
     console.log('Creating user in database...');
     let user;
     try {
-      user = await prisma.user.create({
+      user = await prisma.User.create({
         data: {
           name,
           email,
@@ -123,7 +123,7 @@ export async function login(req, res, next) {
     }
 
     // Buscar usuário
-    const user = await prisma.user.findUnique({
+    const user = await prisma.User.findUnique({
       where: { email }
     });
 
@@ -162,7 +162,7 @@ export async function login(req, res, next) {
 // Get current user
 export async function me(req, res, next) {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.User.findUnique({
       where: { id: req.user.userId }
     });
 
@@ -188,7 +188,7 @@ export async function forgotPassword(req, res, next) {
     }
 
     // Buscar usuário
-    const user = await prisma.user.findUnique({
+    const user = await prisma.User.findUnique({
       where: { email }
     });
 
@@ -205,7 +205,7 @@ export async function forgotPassword(req, res, next) {
     expiresAt.setHours(expiresAt.getHours() + 1); // Expira em 1 hora
 
     // Salvar token no banco
-    await prisma.passwordReset.create({
+    await prisma.PasswordReset.create({
       data: {
         email,
         token,
@@ -238,7 +238,7 @@ export async function validateResetToken(req, res, next) {
       return res.status(400).json({ message: 'Token é obrigatório' });
     }
 
-    const passwordReset = await prisma.passwordReset.findUnique({
+    const passwordReset = await prisma.PasswordReset.findUnique({
       where: { token }
     });
 
@@ -279,7 +279,7 @@ export async function resetPassword(req, res, next) {
     }
 
     // Buscar token
-    const passwordReset = await prisma.passwordReset.findUnique({
+    const passwordReset = await prisma.PasswordReset.findUnique({
       where: { token }
     });
 
@@ -299,13 +299,13 @@ export async function resetPassword(req, res, next) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Atualizar senha do usuário
-    await prisma.user.update({
+    await prisma.User.update({
       where: { email: passwordReset.email },
       data: { password: hashedPassword }
     });
 
     // Marcar token como usado
-    await prisma.passwordReset.update({
+    await prisma.PasswordReset.update({
       where: { token },
       data: { used: true }
     });
