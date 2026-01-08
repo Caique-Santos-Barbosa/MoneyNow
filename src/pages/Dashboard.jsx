@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -19,7 +20,8 @@ import {
   Target,
   CheckCircle2,
   Circle,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +92,7 @@ export default function Dashboard() {
   // Verificar se está em teste grátis (localStorage)
   const [isInTrial, setIsInTrial] = useState(false);
   const [trialDaysLeft, setTrialDaysLeft] = useState(0);
+  const [showTrialWelcome, setShowTrialWelcome] = useState(false);
 
   useEffect(() => {
     const premiumStatus = localStorage.getItem('premium_status');
@@ -126,6 +129,21 @@ export default function Dashboard() {
       }
     }
   }, [user]);
+
+  // Verifica se deve mostrar banner de boas-vindas
+  useEffect(() => {
+    const shouldShow = localStorage.getItem('show_trial_welcome');
+    if (shouldShow === 'true') {
+      setShowTrialWelcome(true);
+      // Remove a flag para não mostrar novamente
+      localStorage.removeItem('show_trial_welcome');
+      
+      // Auto-fecha após 5 segundos
+      setTimeout(() => {
+        setShowTrialWelcome(false);
+      }, 5000);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -288,8 +306,56 @@ export default function Dashboard() {
           setShowOnboarding(false);
         }} />
       )}
-      {/* Trial Banner */}
-      {isInTrial && (
+
+      {/* Welcome Trial Banner - Aparece apenas uma vez após ativar */}
+      {showTrialWelcome && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white overflow-hidden relative">
+            <CardContent className="p-6">
+              <button
+                onClick={() => setShowTrialWelcome(false)}
+                className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-4 rounded-2xl">
+                  <Crown className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-2xl mb-2">🎉 Bem-vindo ao Premium!</h3>
+                  <p className="text-white/90 text-lg">
+                    Seu teste grátis de 7 dias foi ativado com sucesso! Aproveite todos os recursos ilimitados.
+                  </p>
+                  <div className="flex gap-4 mt-4">
+                    <div className="bg-white/20 px-4 py-2 rounded-lg">
+                      <div className="text-xs text-white/80">Contas</div>
+                      <div className="font-bold">Ilimitadas</div>
+                    </div>
+                    <div className="bg-white/20 px-4 py-2 rounded-lg">
+                      <div className="text-xs text-white/80">Cartões</div>
+                      <div className="font-bold">Ilimitados</div>
+                    </div>
+                    <div className="bg-white/20 px-4 py-2 rounded-lg">
+                      <div className="text-xs text-white/80">Relatórios</div>
+                      <div className="font-bold">Avançados</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Trial Banner - Aparece sempre enquanto o teste estiver ativo */}
+      {isInTrial && !showTrialWelcome && (
         <Card className="bg-gradient-to-r from-[#00D68F] to-[#00B578] border-0 text-white overflow-hidden">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

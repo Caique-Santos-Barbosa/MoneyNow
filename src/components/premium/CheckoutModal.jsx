@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import {
   Dialog,
@@ -35,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [startWithTrial, setStartWithTrial] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
@@ -105,6 +107,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
       
       localStorage.setItem('premium_status', JSON.stringify(premiumData));
       localStorage.setItem('trial_activated', 'true');
+      localStorage.setItem('show_trial_welcome', 'true'); // Flag para mostrar banner
       
       setPaymentData({
         method: 'trial',
@@ -114,13 +117,6 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
       
       setPaymentStatus('trial_started');
       setStep(3);
-      
-      // Aguarda 2 segundos antes de fechar e recarregar
-      setTimeout(() => {
-        onSuccess?.();
-        onClose();
-        window.location.reload(); // Recarrega para aplicar premium
-      }, 2000);
       
     } catch (error) {
       console.error('Error starting trial:', error);
@@ -152,6 +148,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
       
       localStorage.setItem('premium_status', JSON.stringify(premiumData));
       localStorage.setItem('trial_activated', 'true');
+      localStorage.setItem('show_trial_welcome', 'true'); // Flag para mostrar banner
       
       setPaymentData({
         method: paymentMethod,
@@ -161,13 +158,6 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
       
       setPaymentStatus('success');
       setIsProcessing(false);
-      
-      // Aguarda 2 segundos antes de fechar e recarregar
-      setTimeout(() => {
-        onSuccess?.();
-        onClose();
-        window.location.reload(); // Recarrega para aplicar premium
-      }, 2000);
       
     } catch (error) {
       console.error('Payment error:', error);
@@ -179,7 +169,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
   const handleComplete = () => {
     onSuccess?.();
     onClose();
-    window.location.reload();
+    navigate('/'); // Redireciona para Dashboard
   };
 
   const progress = (step / 3) * 100;
@@ -547,7 +537,7 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Teste válido até:</span>
                     <span className="font-medium">
-                      {new Date(paymentData?.expiresAt).toLocaleDateString('pt-BR')}
+                      {paymentData?.trialEndsAt ? new Date(paymentData.trialEndsAt).toLocaleDateString('pt-BR') : 'N/A'}
                     </span>
                   </div>
                 </div>
