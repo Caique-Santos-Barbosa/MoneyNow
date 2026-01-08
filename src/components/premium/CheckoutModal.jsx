@@ -85,36 +85,46 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
 
   const handleStartTrial = async () => {
     setIsProcessing(true);
+    setPaymentStatus('processing');
+    
+    // Simula processamento de 2 segundos
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     try {
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-      await base44.auth.updateMe({
-        is_premium: true,
-        trial_used: true,
-        trial_started_at: new Date().toISOString(),
-        trial_ends_at: trialEndsAt.toISOString(),
-        premium_expires_at: trialEndsAt.toISOString()
+      // Simula sucesso do teste grátis
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 dias de teste
+      
+      // Salva no localStorage (simulado)
+      const premiumData = {
+        isPremium: true,
+        trialMode: true,
+        trialEndsAt: trialEndDate.toISOString(),
+        activatedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('premium_status', JSON.stringify(premiumData));
+      localStorage.setItem('trial_activated', 'true');
+      
+      setPaymentData({
+        method: 'trial',
+        trialEndsAt: trialEndDate,
+        success: true
       });
-
-      await base44.entities.Subscription.create({
-        plan: 'annual',
-        status: 'trial',
-        amount: 0,
-        installments: 1,
-        installment_amount: 0,
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: trialEndsAt.toISOString().split('T')[0],
-        payment_method: 'trial'
-      });
-
+      
       setPaymentStatus('trial_started');
       setStep(3);
-      setPaymentData({ expiresAt: trialEndsAt });
+      
+      // Aguarda 2 segundos antes de fechar e recarregar
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+        window.location.reload(); // Recarrega para aplicar premium
+      }, 2000);
+      
     } catch (error) {
       console.error('Error starting trial:', error);
       setPaymentStatus('error');
-      setStep(3);
     } finally {
       setIsProcessing(false);
     }
@@ -122,53 +132,46 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
 
   const handlePayment = async () => {
     setIsProcessing(true);
+    setPaymentStatus('processing');
+    
+    // Simula processamento de 2 segundos
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     try {
-      // Simular processamento de pagamento
-      // Em produção, aqui você chamaria o gateway de pagamento (Stripe, PagSeguro, etc)
+      // Simula sucesso do pagamento
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 dias de teste
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-      await base44.auth.updateMe({
-        is_premium: true,
-        premium_plan: 'annual',
-        premium_started_at: new Date().toISOString(),
-        premium_expires_at: expiresAt.toISOString()
+      // Salva no localStorage (simulado)
+      const premiumData = {
+        isPremium: true,
+        trialMode: true,
+        trialEndsAt: trialEndDate.toISOString(),
+        activatedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('premium_status', JSON.stringify(premiumData));
+      localStorage.setItem('trial_activated', 'true');
+      
+      setPaymentData({
+        method: paymentMethod,
+        trialEndsAt: trialEndDate,
+        success: true
       });
-
-      await base44.entities.Subscription.create({
-        plan: 'annual',
-        status: 'active',
-        amount: 100,
-        installments: parseInt(installments),
-        installment_amount: 100 / parseInt(installments),
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: expiresAt.toISOString().split('T')[0],
-        next_billing_date: expiresAt.toISOString().split('T')[0],
-        payment_method: paymentMethod
-      });
-
-      await base44.entities.Payment.create({
-        subscription_id: 'sub_mock',
-        amount: 100,
-        installment_number: 1,
-        total_installments: parseInt(installments),
-        status: 'paid',
-        payment_method: paymentMethod,
-        paid_at: new Date().toISOString(),
-        due_date: new Date().toISOString().split('T')[0]
-      });
-
+      
       setPaymentStatus('success');
-      setPaymentData({ expiresAt, installments: parseInt(installments) });
-      setStep(3);
+      setIsProcessing(false);
+      
+      // Aguarda 2 segundos antes de fechar e recarregar
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+        window.location.reload(); // Recarrega para aplicar premium
+      }, 2000);
+      
     } catch (error) {
-      console.error('Error processing payment:', error);
+      console.error('Payment error:', error);
       setPaymentStatus('error');
-      setStep(3);
-    } finally {
       setIsProcessing(false);
     }
   };

@@ -87,9 +87,45 @@ export default function Dashboard() {
     setCardModal({ open: true, card: null });
   };
 
-  // Calculate trial days remaining
-  const trialDaysLeft = user?.trial_ends_at ? differenceInDays(new Date(user.trial_ends_at), new Date()) : 0;
-  const isInTrial = user?.trial_ends_at && trialDaysLeft > 0;
+  // Verificar se está em teste grátis (localStorage)
+  const [isInTrial, setIsInTrial] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0);
+
+  useEffect(() => {
+    const premiumStatus = localStorage.getItem('premium_status');
+    if (premiumStatus) {
+      try {
+        const data = JSON.parse(premiumStatus);
+        if (data.trialMode && data.trialEndsAt) {
+          const trialEnd = new Date(data.trialEndsAt);
+          const now = new Date();
+          const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+          
+          if (daysLeft > 0) {
+            setIsInTrial(true);
+            setTrialDaysLeft(daysLeft);
+          } else {
+            // Teste expirou
+            localStorage.removeItem('premium_status');
+            localStorage.removeItem('trial_activated');
+            setIsInTrial(false);
+            setTrialDaysLeft(0);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing premium status:', error);
+      }
+    } else {
+      // Verifica também do user (fallback)
+      if (user?.trial_ends_at) {
+        const daysLeft = differenceInDays(new Date(user.trial_ends_at), new Date());
+        if (daysLeft > 0) {
+          setIsInTrial(true);
+          setTrialDaysLeft(daysLeft);
+        }
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     loadData();
@@ -255,13 +291,27 @@ export default function Dashboard() {
       {/* Trial Banner */}
       {isInTrial && (
         <Card className="bg-gradient-to-r from-[#00D68F] to-[#00B578] border-0 text-white overflow-hidden">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium">Você está no teste grátis Premium!</p>
-              <p className="text-sm text-white/70">Restam {trialDaysLeft} dias. Aproveite todos os recursos!</p>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <Crown className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Teste Grátis Ativo! 🎉</h3>
+                  <p className="text-white/90">
+                    Você tem {trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'} restantes do seu teste premium
+                  </p>
+                </div>
+              </div>
+              <Link to={createPageUrl('Premium')}>
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-[#00D68F] hover:bg-white/90"
+                >
+                  Ver Planos
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>

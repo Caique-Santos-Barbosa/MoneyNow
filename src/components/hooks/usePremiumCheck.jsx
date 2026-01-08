@@ -11,7 +11,22 @@ const FREE_LIMITS = {
 
 export function usePremiumCheck() {
   const [user, setUser] = useState(null);
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremium, setIsPremium] = useState(() => {
+    // Verifica localStorage primeiro
+    const storedPremium = localStorage.getItem('premium_status');
+    if (storedPremium) {
+      try {
+        const data = JSON.parse(storedPremium);
+        if (data.trialMode && data.trialEndsAt) {
+          const trialEnd = new Date(data.trialEndsAt);
+          return trialEnd > new Date(); // Se ainda está no período de teste
+        }
+      } catch (error) {
+        console.error('Error parsing premium status:', error);
+      }
+    }
+    return false;
+  });
 
   useEffect(() => {
     checkPremium();
@@ -19,6 +34,27 @@ export function usePremiumCheck() {
 
   const checkPremium = async () => {
     try {
+      // Verifica localStorage primeiro
+      const storedPremium = localStorage.getItem('premium_status');
+      if (storedPremium) {
+        try {
+          const data = JSON.parse(storedPremium);
+          if (data.trialMode && data.trialEndsAt) {
+            const trialEnd = new Date(data.trialEndsAt);
+            if (trialEnd > new Date()) {
+              setIsPremium(true);
+              return;
+            } else {
+              // Teste expirou
+              localStorage.removeItem('premium_status');
+              localStorage.removeItem('trial_activated');
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing premium status:', error);
+        }
+      }
+
       const userData = await base44.auth.me();
       
       if (!userData) {

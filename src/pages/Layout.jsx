@@ -33,6 +33,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import PremiumBadge from '@/components/premium/PremiumBadge';
 import { cn } from "@/lib/utils";
+import SearchModal from '@/components/search/SearchModal';
+import NotificationsModal from '@/components/notifications/NotificationsModal';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
@@ -47,6 +49,8 @@ const navigation = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -226,11 +230,21 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowSearch(true)}
+              >
                 <Search className="w-5 h-5" />
               </Button>
               
-              <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-gray-700">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-gray-500 hover:text-gray-700"
+                onClick={() => setShowNotifications(true)}
+              >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#FF5252] rounded-full" />
               </Button>
@@ -280,6 +294,9 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </main>
       </div>
+
+      <SearchModal isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
 
       {/* Mobile bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 lg:hidden">
