@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getCategoriesByType, addCustomCategory } from '@/data/defaultCategories';
 import { createNotification } from '@/utils/notificationManager';
 import { StorageManager } from '@/utils/storageManager';
+import { toast } from '@/lib/toast';
 import {
   Dialog,
   DialogContent,
@@ -150,25 +151,25 @@ export default function TransactionModal({
     e.preventDefault();
     
     if (!formData.description || !formData.amount) {
-      alert('Preencha descrição e valor');
+      toast.error('Campos obrigatórios', 'Preencha descrição e valor');
       return;
     }
     
     if (type !== 'transfer' && !formData.category_id) {
-      alert('Selecione uma categoria');
+      toast.error('Categoria obrigatória', 'Selecione uma categoria');
       return;
     }
     
     if (type === 'transfer') {
       if (!formData.account_id || !formData.target_account_id) {
-        alert('Selecione conta de origem e destino');
+        toast.error('Contas obrigatórias', 'Selecione conta de origem e destino');
         return;
       }
     } else if (type === 'expense' && !formData.card_id && !formData.account_id) {
-      alert('Selecione uma conta ou cartão');
+      toast.error('Conta ou cartão obrigatório', 'Selecione uma conta ou cartão');
       return;
     } else if (type === 'income' && !formData.account_id) {
-      alert('Selecione uma conta');
+      toast.error('Conta obrigatória', 'Selecione uma conta');
       return;
     }
     
@@ -220,12 +221,20 @@ export default function TransactionModal({
         tags: []
       });
       
+      // Toast de sucesso
+      const formattedValue = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(amount);
+      
+      toast.success('Transação criada!', `${type === 'income' ? 'Receita' : 'Despesa'} de ${formattedValue} registrada`);
+      
       onSuccess?.();
       onClose();
       
     } catch (error) {
       console.error('Error creating transaction:', error);
-      alert('Erro ao criar transação. Tente novamente.');
+      toast.error('Erro ao criar transação', 'Tente novamente ou contate o suporte');
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +250,7 @@ export default function TransactionModal({
 
   const handleCreateCategory = () => {
     if (!newCategory.name.trim()) {
-      alert('Digite um nome para a categoria');
+      toast.error('Nome obrigatório', 'Digite um nome para a categoria');
       return;
     }
     

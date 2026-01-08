@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StorageManager } from '@/utils/storageManager';
 import { getCategoriesByType, addCustomCategory } from '@/data/defaultCategories';
 import { createNotification } from '@/utils/notificationManager';
+import { toast } from '@/lib/toast';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -159,7 +160,7 @@ export default function Budget() {
   const handleSaveBudget = (data) => {
     try {
       if (!data.category_id || !data.planned_amount) {
-        alert('Preencha categoria e valor');
+        toast.error('Campos obrigatórios', 'Preencha categoria e valor');
         return;
       }
       
@@ -188,12 +189,15 @@ export default function Budget() {
         );
         
         if (existing) {
-          alert('Já existe um orçamento para esta categoria neste mês');
+          toast.error('Orçamento duplicado', 'Já existe um orçamento para esta categoria neste mês');
           return;
         }
         
         StorageManager.addBudget(budgetData);
         createNotification.transactionAdded('expense', 'Orçamento criado com sucesso');
+        toast.success('Orçamento criado!', 'Seu planejamento foi salvo com sucesso');
+      } else {
+        toast.success('Orçamento atualizado!', 'Seu planejamento foi atualizado com sucesso');
       }
       
       setModalOpen(false);
@@ -201,7 +205,7 @@ export default function Budget() {
       loadData();
     } catch (error) {
       console.error('Error saving budget:', error);
-      alert('Erro ao salvar orçamento');
+      toast.error('Erro ao salvar', 'Tente novamente');
     }
   };
 
@@ -226,7 +230,7 @@ export default function Budget() {
     );
 
     if (prevBudgets.length === 0) {
-      alert('Não há orçamentos no mês anterior para copiar');
+      toast.error('Nenhum orçamento', 'Não há orçamentos no mês anterior para copiar');
       return;
     }
 
@@ -255,12 +259,13 @@ export default function Budget() {
       }
     }
 
+    toast.success('Orçamentos copiados!', 'Orçamentos do mês anterior foram copiados');
     loadData();
   };
 
   const handleCreateCategory = () => {
     if (!newCategory.name.trim()) {
-      alert('Digite um nome para a categoria');
+      toast.error('Nome obrigatório', 'Digite um nome para a categoria');
       return;
     }
     
@@ -879,7 +884,7 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
             </Button>
             <Button onClick={() => {
               if (!newCategory.name.trim()) {
-                alert('Digite um nome para a categoria');
+                toast.error('Nome obrigatório', 'Digite um nome para a categoria');
                 return;
               }
               

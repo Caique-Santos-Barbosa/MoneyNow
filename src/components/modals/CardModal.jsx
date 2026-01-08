@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StorageManager } from '@/utils/storageManager';
 import { createNotification } from '@/utils/notificationManager';
+import { toast } from '@/lib/toast';
 import {
   Dialog,
   DialogContent,
@@ -89,7 +90,7 @@ export default function CardModal({
     e.preventDefault();
     
     if (!formData.name) {
-      alert('Preencha o nome do cartão');
+      toast.error('Nome obrigatório', 'Preencha o nome do cartão');
       return;
     }
     
@@ -113,16 +114,18 @@ export default function CardModal({
       
       if (card?.id) {
         StorageManager.updateCard(card.id, cardData);
+        toast.success('Cartão atualizado!', `${formData.name} foi atualizado com sucesso`);
       } else {
         StorageManager.addCard(cardData);
         createNotification.transactionAdded('expense', 'Cartão criado com sucesso');
+        toast.success('Cartão criado!', `${formData.name} foi adicionado com sucesso`);
       }
       
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating card:', error);
-      alert('Erro ao criar cartão');
+      toast.error('Erro ao criar cartão', 'Tente novamente');
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/lib/toast';
 import {
   User,
   Bell,
@@ -46,7 +47,7 @@ import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('preferences');
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
@@ -85,13 +86,13 @@ export default function Settings() {
   const handleSavePreferences = async () => {
     // TODO: Implementar endpoint de atualização de preferências no backend
     console.log('Preferências:', preferences);
-    alert('Funcionalidade de salvar preferências será implementada em breve');
+    toast.info('Em breve', 'Funcionalidade de salvar preferências será implementada em breve');
   };
 
   const handleSaveNotifications = async () => {
     // TODO: Implementar endpoint de atualização de notificações no backend
     console.log('Notificações:', notifications);
-    alert('Funcionalidade de salvar notificações será implementada em breve');
+    toast.info('Em breve', 'Funcionalidade de salvar notificações será implementada em breve');
   };
 
   const handlePhotoChange = (e) => {
@@ -100,13 +101,13 @@ export default function Settings() {
     
     // Validar tipo
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione uma imagem');
+      toast.error('Formato inválido', 'Por favor, selecione uma imagem (JPG, PNG, GIF)');
       return;
     }
     
     // Validar tamanho (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Imagem muito grande. Tamanho máximo: 2MB');
+      toast.error('Imagem muito grande', 'O tamanho máximo é 2MB');
       return;
     }
     
@@ -117,25 +118,20 @@ export default function Settings() {
     reader.onloadend = () => {
       const base64 = reader.result;
       
-      // Salvar no estado
+      // Atualizar estado local
       setProfilePhoto(base64);
       
-      // Salvar no localStorage
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      userData.profile_photo = base64;
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Atualizar contexto (isso já salva no localStorage)
+      updateUser({ profile_photo: base64 });
       
       setIsUploadingPhoto(false);
       
-      // Mostrar sucesso
-      alert('Foto atualizada com sucesso!');
-      
-      // Recarregar para atualizar todos os avatares
-      setTimeout(() => window.location.reload(), 500);
+      // Toast de sucesso (sem reload!)
+      toast.success('Foto atualizada!', 'Sua foto de perfil foi atualizada com sucesso');
     };
     
     reader.onerror = () => {
-      alert('Erro ao carregar imagem');
+      toast.error('Erro ao carregar imagem', 'Tente novamente com outra imagem');
       setIsUploadingPhoto(false);
     };
     
@@ -143,15 +139,15 @@ export default function Settings() {
   };
 
   const handleRemovePhoto = () => {
+    // Atualizar estado local
     setProfilePhoto(null);
     
-    // Remover do localStorage
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    delete userData.profile_photo;
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Atualizar contexto (remove a foto)
+    const { profile_photo, ...userWithoutPhoto } = user;
+    updateUser(userWithoutPhoto);
     
-    alert('Foto removida com sucesso!');
-    setTimeout(() => window.location.reload(), 500);
+    // Toast de sucesso
+    toast.success('Foto removida', 'Sua foto de perfil foi removida');
   };
 
   const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';

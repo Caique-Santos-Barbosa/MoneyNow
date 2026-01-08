@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StorageManager } from '@/utils/storageManager';
 import { createNotification } from '@/utils/notificationManager';
+import { toast } from '@/lib/toast';
 import {
   Dialog,
   DialogContent,
@@ -84,7 +85,7 @@ export default function AccountModal({
     e.preventDefault();
     
     if (!formData.name || !formData.type) {
-      alert('Preencha nome e tipo da conta');
+      toast.error('Campos obrigatórios', 'Preencha nome e tipo da conta');
       return;
     }
     
@@ -109,16 +110,18 @@ export default function AccountModal({
       
       if (account?.id) {
         StorageManager.updateAccount(account.id, accountData);
+        toast.success('Conta atualizada!', `${formData.name} foi atualizada com sucesso`);
       } else {
         StorageManager.addAccount(accountData);
         createNotification.transactionAdded('income', 'Conta criada com sucesso');
+        toast.success('Conta criada!', `${formData.name} foi adicionada com sucesso`);
       }
       
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating account:', error);
-      alert('Erro ao criar conta');
+      toast.error('Erro ao criar conta', 'Tente novamente');
     } finally {
       setIsLoading(false);
     }

@@ -1,3 +1,5 @@
+import { toast } from '@/lib/toast';
+
 export const NotificationManager = {
   // Adicionar notificação
   add(notification) {
@@ -92,21 +94,33 @@ export const createNotification = {
   },
   
   billDue(billName, daysLeft) {
-    return NotificationManager.add({
+    const notification = NotificationManager.add({
       type: 'warning',
       title: 'Fatura vencendo',
       message: `A fatura ${billName} vence em ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}`,
       time: 'Agora'
     });
+    
+    // Toast de alerta
+    toast.info('Lembrete', notification.message);
+    
+    return notification;
   },
   
   goalReached(goalName, percentage) {
-    return NotificationManager.add({
+    const notification = NotificationManager.add({
       type: 'info',
-      title: 'Meta atingida',
-      message: `Parabéns! Você atingiu ${percentage}% da sua meta ${goalName}`,
+      title: percentage >= 100 ? 'Meta alcançada! 🎉' : 'Progresso na meta',
+      message: `${goalName}: ${percentage}% concluído`,
       time: 'Agora'
     });
+    
+    // Toast de comemoração
+    if (percentage >= 100) {
+      toast.success('🎉 Parabéns!', `Você alcançou sua meta: ${goalName}`);
+    }
+    
+    return notification;
   }
 };
 

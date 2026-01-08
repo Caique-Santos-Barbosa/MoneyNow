@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StorageManager } from '@/utils/storageManager';
 import { createNotification } from '@/utils/notificationManager';
+import { toast } from '@/lib/toast';
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,7 @@ export default function GoalModal({ isOpen, onClose, onSuccess, goal }) {
     e.preventDefault();
     
     if (!formData.name || !formData.target_amount) {
-      alert('Preencha nome e valor da meta');
+      toast.error('Campos obrigatórios', 'Preencha nome e valor da meta');
       return;
     }
     
@@ -59,9 +60,11 @@ export default function GoalModal({ isOpen, onClose, onSuccess, goal }) {
       
       if (goal?.id) {
         StorageManager.updateGoal(goal.id, goalData);
+        toast.success('Meta atualizada!', `${formData.name} foi atualizada com sucesso`);
       } else {
         StorageManager.addGoal(goalData);
         createNotification.goalReached(formData.name, 0);
+        toast.success('Meta criada!', `${formData.name} foi adicionada com sucesso`);
       }
       
       setFormData({ name: '', target_amount: '', current_amount: '0', deadline: '' });
@@ -69,7 +72,7 @@ export default function GoalModal({ isOpen, onClose, onSuccess, goal }) {
       onClose();
     } catch (error) {
       console.error('Error creating goal:', error);
-      alert('Erro ao criar meta');
+      toast.error('Erro ao criar meta', 'Tente novamente');
     } finally {
       setIsLoading(false);
     }

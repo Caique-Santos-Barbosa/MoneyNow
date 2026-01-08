@@ -156,12 +156,21 @@ export function AuthProvider({ children }) {
     await checkAuth();
   }
 
+  // Função para atualizar dados do usuário
+  function updateUser(updates) {
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }
+
   const value = {
     user,
+    setUser,
     isLoading,
     login,
     logout,
     refreshUser,
+    updateUser,
     isAuthenticated: !!user
   };
 
