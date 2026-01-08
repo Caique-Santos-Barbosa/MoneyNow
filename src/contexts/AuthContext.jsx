@@ -112,16 +112,22 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || 'Erro ao fazer login');
       }
 
-      // Salvar token
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+      // Validar que os dados obrigatórios existem
+      if (!data.token) {
+        throw new Error('Token não recebido do servidor');
       }
+      if (!data.user) {
+        throw new Error('Dados do usuário não recebidos do servidor');
+      }
+
+      // 1. Salvar token JWT no localStorage
+      localStorage.setItem('token', data.token);
       
-      // Salvar usuário
-      if (data.user) {
-        setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      // 2. Salvar dados do usuário no localStorage
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // 3. Atualizar estado do React com o usuário
+      setUser(data.user);
 
       // Redirecionar
       const searchParams = new URLSearchParams(window.location.search);
