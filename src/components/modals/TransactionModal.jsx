@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { getCategoriesByType, addCustomCategory } from '@/data/defaultCategories';
 import { createNotification } from '@/utils/notificationManager';
 import { StorageManager } from '@/utils/storageManager';
@@ -89,30 +88,22 @@ export default function TransactionModal({
     }
   }, [isOpen, type]);
 
-  const loadData = async () => {
+  const loadData = () => {
     try {
-      const user = await base44.auth.me();
-      
-      if (!user || !user?.email) {
-        if (!propAccounts) setAccounts([]);
-        if (!propCards) setCards([]);
-        if (!propCategories) setCategories([]);
-        return;
-      }
-      
+      // Carregar do localStorage diretamente
       if (!propAccounts) {
-        const accountsData = await base44.entities.Account.filter({ created_by: user.email });
+        const accountsData = StorageManager.getAccounts();
         setAccounts(accountsData || []);
       }
       
       if (!propCards) {
-        const cardsData = await base44.entities.Card.filter({ created_by: user.email });
+        const cardsData = StorageManager.getCards();
         setCards(cardsData || []);
       }
       
       if (!propCategories) {
-        const categoriesData = await base44.entities.Category.list();
-        setCategories(categoriesData || []);
+        // Categories vêm das categorias padrão + personalizadas
+        setCategories([]);
       }
     } catch (error) {
       console.error('Error loading data:', error);
