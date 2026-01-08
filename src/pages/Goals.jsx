@@ -167,10 +167,11 @@ export default function Goals() {
         <h1 className="text-2xl font-bold text-gray-900">Metas financeiras</h1>
         <Button 
           onClick={handleAddGoal}
-          className="bg-[#6C40D9] hover:bg-[#5432B8]"
+          className="bg-gradient-to-r from-[#00D68F] to-[#00B578] hover:from-[#00B578] hover:to-[#00D68F] text-white shadow-lg"
+          size="lg"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova meta
+          <Plus className="w-5 h-5 mr-2" />
+          Nova Meta
         </Button>
       </div>
 
@@ -244,9 +245,9 @@ export default function Goals() {
                   message="Você ainda não tem metas ativas"
                   hint="Crie sua primeira meta e comece a transformar seus sonhos em realidade!"
                   action={
-                    <Button 
+                    <Button
                       onClick={handleAddGoal}
-                      className="bg-[#6C40D9] hover:bg-[#5432B8]"
+                      className="bg-gradient-to-r from-[#00D68F] to-[#00B578] hover:from-[#00B578] hover:to-[#00D68F] text-white shadow-lg"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Criar primeira meta

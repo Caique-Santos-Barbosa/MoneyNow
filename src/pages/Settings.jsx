@@ -10,7 +10,8 @@ import {
   LogOut,
   Trash2,
   Download,
-  Sparkles
+  Sparkles,
+  Edit
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -48,6 +49,7 @@ export default function Settings() {
   const { user, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('preferences');
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
   
   // Preferences
   const [preferences, setPreferences] = useState({
@@ -103,14 +105,62 @@ export default function Settings() {
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-[#00D68F]/20">
-              <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-xl">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16 border-2 border-[#00D68F]/20">
+                {user?.profile_photo || profilePhoto ? (
+                  <img 
+                    src={user?.profile_photo || profilePhoto} 
+                    alt={user?.name || 'Usuário'} 
+                    className="w-full h-full object-cover rounded-full" 
+                  />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-xl">
+                    {userInitials}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <input
+                type="file"
+                id="profile-photo"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('Imagem muito grande. Máximo 2MB');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const base64 = reader.result;
+                      setProfilePhoto(base64);
+                      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                      userData.profile_photo = base64;
+                      localStorage.setItem('user', JSON.stringify(userData));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <label
+                htmlFor="profile-photo"
+                className="absolute bottom-0 right-0 p-2 bg-[#00D68F] text-white rounded-full cursor-pointer hover:bg-[#00B578] transition-colors shadow-lg"
+              >
+                <Edit className="w-4 h-4" />
+              </label>
+            </div>
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900">{user?.name || 'Usuário'}</h2>
               <p className="text-sm text-gray-500">{user?.email}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => document.getElementById('profile-photo').click()}
+              >
+                Alterar foto
+              </Button>
             </div>
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />

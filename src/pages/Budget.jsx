@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
+import { getCategoriesByType, addCustomCategory } from '@/data/defaultCategories';
+import { createNotification } from '@/utils/notificationManager';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -59,36 +61,41 @@ export default function Budget() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [budgetType, setBudgetType] = useState('expense');
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', icon: '💸', color: '#6b7280' });
 
   useEffect(() => {
     loadData();
   }, [currentMonth]);
 
-  const loadData = async () => {
+  const loadData = () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
-      
-      if (!user || !user?.email) {
-        setBudgets([]);
-        setCategories([]);
-        setTransactions([]);
-        return;
-      }
-      
       const month = currentMonth.getMonth() + 1;
       const year = currentMonth.getFullYear();
       
-      // CRÍTICO: Filtrar TODOS os dados por created_by para isolar dados entre usuários
-      const [budgetsData, categoriesData, transactionsData] = await Promise.all([
-        base44.entities.Budget.filter({ created_by: user.email, month, year }),
-        base44.entities.Category.list(), // Categorias do sistema são compartilhadas
-        base44.entities.Transaction.filter({ created_by: user.email }, '-date', 500)
-      ]);
+      // Carregar orçamentos do localStorage
+      const allBudgets = StorageManager.getBudgets();
+      const monthBudgets = allBudgets.filter(b => 
+        b.month === month && b.year === year
+      );
       
-      setBudgets(budgetsData || []);
-      setCategories(categoriesData || []);
-      setTransactions(transactionsData || []);
+      // Carregar categorias padrão de despesas
+      const expenseCategories = getCategoriesByType('expense');
+      
+      // Carregar transações para calcular gastos
+      const allTransactions = StorageManager.getTransactions();
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
+      
+      const monthTransactions = allTransactions.filter(t => {
+        const transDate = new Date(t.date);
+        return transDate >= monthStart && transDate <= monthEnd && t.type === 'expense';
+      });
+      
+      setBudgets(monthBudgets || []);
+      setCategories(expenseCategories || []);
+      setTransactions(monthTransactions || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -149,18 +156,44 @@ export default function Budget() {
     return 'bg-[#00D68F]';
   };
 
-  const handleSaveBudget = async (data) => {
+  const handleSaveBudget = (data) => {
     try {
+      if (!data.category_id || !data.planned_amount) {
+        alert('Preencha categoria e valor');
+        return;
+      }
+      
+      const month = currentMonth.getMonth() + 1;
+      const year = currentMonth.getFullYear();
+      
       const budgetData = {
-        ...data,
-        month: currentMonth.getMonth() + 1,
-        year: currentMonth.getFullYear()
+        category_id: data.category_id,
+        amount: parseFloat(data.planned_amount.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0,
+        planned_amount: parseFloat(data.planned_amount.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0,
+        month,
+        year,
+        spent: 0,
+        actual_amount: 0,
+        alert_threshold: data.alert_threshold || 80
       };
-
+      
       if (selectedBudget?.id) {
-        await base44.entities.Budget.update(selectedBudget.id, budgetData);
+        StorageManager.updateBudget(selectedBudget.id, budgetData);
       } else {
-        await base44.entities.Budget.create(budgetData);
+        // Verificar se já existe orçamento para esta categoria neste mês
+        const existing = budgets.find(b => 
+          b.category_id === data.category_id && 
+          b.month === month && 
+          b.year === year
+        );
+        
+        if (existing) {
+          alert('Já existe um orçamento para esta categoria neste mês');
+          return;
+        }
+        
+        StorageManager.addBudget(budgetData);
+        createNotification.transactionAdded('expense', 'Orçamento criado com sucesso');
       }
       
       setModalOpen(false);
@@ -168,46 +201,74 @@ export default function Budget() {
       loadData();
     } catch (error) {
       console.error('Error saving budget:', error);
+      alert('Erro ao salvar orçamento');
     }
   };
 
-  const handleDeleteBudget = async (budgetId) => {
+  const handleDeleteBudget = (budgetId) => {
     try {
-      await base44.entities.Budget.delete(budgetId);
+      StorageManager.deleteBudget(budgetId);
       loadData();
     } catch (error) {
       console.error('Error deleting budget:', error);
     }
   };
 
-  const copyPreviousMonth = async () => {
+  const copyPreviousMonth = () => {
     const prevMonth = subMonths(currentMonth, 1);
-    const user = await base44.auth.me();
+    const prevMonthNum = prevMonth.getMonth() + 1;
+    const prevYear = prevMonth.getFullYear();
     
-    if (!user || !user?.email) {
+    // Carregar orçamentos do mês anterior
+    const allBudgets = StorageManager.getBudgets();
+    const prevBudgets = allBudgets.filter(b => 
+      b.month === prevMonthNum && b.year === prevYear
+    );
+
+    if (prevBudgets.length === 0) {
+      alert('Não há orçamentos no mês anterior para copiar');
       return;
     }
-    
-    // CRÍTICO: Filtrar por created_by
-    const prevBudgets = await base44.entities.Budget.filter({
-      created_by: user.email,
-      month: prevMonth.getMonth() + 1,
-      year: prevMonth.getFullYear()
-    });
 
-    if (prevBudgets.length === 0) return;
+    const currentMonthNum = currentMonth.getMonth() + 1;
+    const currentYear = currentMonth.getFullYear();
 
     for (const budget of prevBudgets) {
-      await base44.entities.Budget.create({
-        category_id: budget.category_id,
-        planned_amount: budget.planned_amount,
-        alert_threshold: budget.alert_threshold,
-        month: currentMonth.getMonth() + 1,
-        year: currentMonth.getFullYear()
-      });
+      // Verificar se já existe para esta categoria
+      const existing = budgets.find(b => 
+        b.category_id === budget.category_id && 
+        b.month === currentMonthNum && 
+        b.year === currentYear
+      );
+      
+      if (!existing) {
+        StorageManager.addBudget({
+          category_id: budget.category_id,
+          amount: budget.amount || budget.planned_amount,
+          planned_amount: budget.amount || budget.planned_amount,
+          month: currentMonthNum,
+          year: currentYear,
+          spent: 0,
+          actual_amount: 0,
+          alert_threshold: budget.alert_threshold || 80
+        });
+      }
     }
 
     loadData();
+  };
+
+  const handleCreateCategory = () => {
+    if (!newCategory.name.trim()) {
+      alert('Digite um nome para a categoria');
+      return;
+    }
+    
+    const created = addCustomCategory('expense', newCategory);
+    const expenseCategories = getCategoriesByType('expense');
+    setCategories(expenseCategories);
+    setShowNewCategoryModal(false);
+    setNewCategory({ name: '', icon: '💸', color: '#6b7280' });
   };
 
   if (isLoading) {
@@ -481,10 +542,77 @@ export default function Budget() {
         }}
         budget={selectedBudget}
         type={budgetType}
-        categories={categories.filter(c => c.type === budgetType)}
+        categories={categories}
         existingBudgets={budgets}
         onSave={handleSaveBudget}
+        onCategoryCreated={() => {
+          // Recarregar categorias
+          const expenseCategories = getCategoriesByType('expense');
+          setCategories(expenseCategories);
+        }}
       />
+
+      {/* Modal de Nova Categoria (no componente principal para recarregar categorias) */}
+      <Dialog open={showNewCategoryModal} onOpenChange={setShowNewCategoryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome da categoria</Label>
+              <Input
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                placeholder="Ex: Educação online"
+              />
+            </div>
+            <div>
+              <Label>Emoji (ícone)</Label>
+              <div className="grid grid-cols-8 gap-2 p-3 border rounded-lg max-h-48 overflow-y-auto">
+                {['🍔', '🚗', '🏠', '🏥', '📚', '🎮', '🛒', '📄', '🐕', '🎁', '💸', '✈️', '🎬', '🏋️', '💻', '📱', '👕', '⚡', '🎨', '🎵', '📷', '☕', '🍕', '🌟', '💰', '🎓', '🚀', '💼', '🎯', '💡', '🔧', '🏆'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, icon: emoji})}
+                    className={cn(
+                      "text-2xl p-2 rounded hover:bg-gray-100 transition-colors",
+                      newCategory.icon === emoji && "bg-[#00D68F]/10 ring-2 ring-[#00D68F]"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Cor</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#14b8a6', '#f43f5e', '#a855f7'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, color})}
+                    className={cn(
+                      "w-10 h-10 rounded-lg transition-all",
+                      newCategory.color === color && "ring-2 ring-offset-2 ring-gray-900"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="outline" onClick={() => setShowNewCategoryModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCategory}>
+              Criar categoria
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -562,12 +690,14 @@ function BudgetItem({ budget, type, onEdit, onDelete, formatCurrency, getProgres
   );
 }
 
-function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudgets, onSave }) {
+function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudgets, onSave, onCategoryCreated }) {
   const [formData, setFormData] = useState({
     category_id: '',
     planned_amount: '',
     alert_threshold: 80
   });
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', icon: '💸', color: '#6b7280' });
 
   useEffect(() => {
     if (budget) {
@@ -623,7 +753,13 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
             <Label>Categoria</Label>
             <Select 
               value={formData.category_id}
-              onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+              onValueChange={(value) => {
+                if (value === 'add_new') {
+                  setShowNewCategoryModal(true);
+                } else {
+                  setFormData({ ...formData, category_id: value });
+                }
+              }}
               required
             >
               <SelectTrigger>
@@ -633,14 +769,31 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
                 {availableCategories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      {category.name}
+                      {category.icon && <span>{category.icon}</span>}
+                      {!category.icon && category.color && (
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                      )}
+                      <span>{category.name}</span>
+                      {category.custom && (
+                        <span className="text-xs text-gray-500">(Personalizada)</span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
+                <div className="border-t my-1" />
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowNewCategoryModal(true);
+                  }}
+                  className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Criar nova categoria
+                </button>
               </SelectContent>
             </Select>
           </div>
@@ -670,6 +823,79 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
           </div>
         </form>
       </DialogContent>
+
+      {/* Modal de Nova Categoria */}
+      <Dialog open={showNewCategoryModal} onOpenChange={setShowNewCategoryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome da categoria</Label>
+              <Input
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                placeholder="Ex: Educação online"
+              />
+            </div>
+            <div>
+              <Label>Emoji (ícone)</Label>
+              <div className="grid grid-cols-8 gap-2 p-3 border rounded-lg max-h-48 overflow-y-auto">
+                {['🍔', '🚗', '🏠', '🏥', '📚', '🎮', '🛒', '📄', '🐕', '🎁', '💸', '✈️', '🎬', '🏋️', '💻', '📱', '👕', '⚡', '🎨', '🎵', '📷', '☕', '🍕', '🌟', '💰', '🎓', '🚀', '💼', '🎯', '💡', '🔧', '🏆'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, icon: emoji})}
+                    className={cn(
+                      "text-2xl p-2 rounded hover:bg-gray-100 transition-colors",
+                      newCategory.icon === emoji && "bg-[#00D68F]/10 ring-2 ring-[#00D68F]"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Cor</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#14b8a6', '#f43f5e', '#a855f7'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, color})}
+                    className={cn(
+                      "w-10 h-10 rounded-lg transition-all",
+                      newCategory.color === color && "ring-2 ring-offset-2 ring-gray-900"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="outline" onClick={() => setShowNewCategoryModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              if (!newCategory.name.trim()) {
+                alert('Digite um nome para a categoria');
+                return;
+              }
+              
+              const created = addCustomCategory('expense', newCategory);
+              setFormData({...formData, category_id: created.id});
+              setShowNewCategoryModal(false);
+              setNewCategory({ name: '', icon: '💸', color: '#6b7280' });
+              onCategoryCreated?.();
+            }}>
+              Criar categoria
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
