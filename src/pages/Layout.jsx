@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationManager } from '@/utils/notificationManager';
 import {
   LayoutDashboard,
   Wallet,
@@ -51,7 +52,24 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    // Carregar contador inicial
+    updateUnreadCount();
+    
+    // Escutar mudanças
+    const handleUpdate = () => updateUnreadCount();
+    window.addEventListener('notificationsUpdated', handleUpdate);
+    
+    return () => window.removeEventListener('notificationsUpdated', handleUpdate);
+  }, []);
+
+  const updateUnreadCount = () => {
+    const count = NotificationManager.getUnreadCount();
+    setUnreadCount(count);
+  };
 
   const handleLogout = () => {
     logout();
@@ -100,8 +118,8 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -246,7 +264,11 @@ export default function Layout({ children, currentPageName }) {
                 onClick={() => setShowNotifications(true)}
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#FF5252] rounded-full" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Button>
 
               <DropdownMenu>

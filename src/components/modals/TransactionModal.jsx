@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getCategoriesByType } from '@/data/defaultCategories';
+import { createNotification } from '@/utils/notificationManager';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +49,7 @@ export default function TransactionModal({
   const [accounts, setAccounts] = useState(propAccounts || []);
   const [cards, setCards] = useState(propCards || []);
   const [categories, setCategories] = useState(propCategories || []);
+  const [defaultCategories, setDefaultCategories] = useState([]);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -65,7 +68,11 @@ export default function TransactionModal({
     if (isOpen && (!propAccounts || !propCards || !propCategories)) {
       loadData();
     }
-  }, [isOpen]);
+    // Carregar categorias padrão
+    if (type !== 'transfer') {
+      setDefaultCategories(getCategoriesByType(type));
+    }
+  }, [isOpen, type]);
 
   const loadData = async () => {
     try {
@@ -152,6 +159,14 @@ export default function TransactionModal({
         await base44.entities.Transaction.update(transaction.id, data);
       } else {
         await base44.entities.Transaction.create(data);
+        
+        // Gerar notificação ao criar transação
+        const formattedValue = new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(data.amount);
+        
+        createNotification.transactionAdded(type, formattedValue);
       }
 
       onSuccess?.();
@@ -173,14 +188,15 @@ export default function TransactionModal({
     });
   };
 
-  const filteredCategories = categories.filter(cat => {
-    if (type === 'transfer') return false;
-    return cat.type === type;
-  });
+  // Combinar categorias padrão com categorias do sistema (se houver)
+  const filteredCategories = type === 'transfer' ? [] : [
+    ...defaultCategories,
+    ...categories.filter(cat => cat.type === type)
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-0">
           <Tabs value={type} onValueChange={setType} className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-gray-100">
@@ -329,11 +345,17 @@ export default function TransactionModal({
                     {filteredCategories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-2 h-2 rounded-full" 
-                            style={{ backgroundColor: category.color }}
-                          />
-                          {category.name}
+                          {category.icon && <span>{category.icon}</span>}
+                          {!category.icon && category.color && (
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: category.color }}
+                            />
+                          )}
+                          <span>{category.name}</span>
+                          {category.custom && (
+                            <span className="text-xs text-gray-500">(Personalizada)</span>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
