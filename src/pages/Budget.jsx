@@ -766,25 +766,23 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {availableCategories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      {category.icon && <span>{category.icon}</span>}
-                      {!category.icon && category.color && (
-                        <div 
-                          className="w-2 h-2 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                      )}
-                      <span>{category.name}</span>
-                      {category.custom && (
-                        <span className="text-xs text-gray-500">(Personalizada)</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
+                {availableCategories.length === 0 ? (
+                  <div className="p-3 text-sm text-gray-500 text-center">
+                    Nenhuma categoria disponível
+                  </div>
+                ) : (
+                  availableCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{category.icon}</span>
+                        <span>{category.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
                 <div className="border-t my-1" />
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     setShowNewCategoryModal(true);
@@ -792,7 +790,7 @@ function BudgetModal({ isOpen, onClose, budget, type, categories, existingBudget
                   className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
                 >
                   <Plus className="w-4 h-4" />
-                  Criar nova categoria
+                  Criar nova categoria de despesa
                 </button>
               </SelectContent>
             </Select>
