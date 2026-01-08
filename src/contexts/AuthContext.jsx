@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '@/api/config';
 
 const AuthContext = createContext(null);
 
@@ -101,11 +102,7 @@ export function AuthProvider({ children }) {
 
   async function login(email, password, rememberMe = false) {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, rememberMe })
-      });
+      const response = await api.login({ email, password, rememberMe });
 
       // Verificar se a resposta tem conteúdo antes de fazer parse
       const contentType = response.headers.get('content-type');
