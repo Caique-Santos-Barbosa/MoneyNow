@@ -169,6 +169,28 @@ export default function OnboardingTour({ onComplete }) {
   const step = tourSteps[currentStep];
   const progress = ((currentStep + 1) / tourSteps.length) * 100;
 
+  // Calcular posição do card considerando altura da tela
+  const getCardPosition = () => {
+    if (step.type === 'welcome' || !highlightRect) {
+      return { top: '50%', transform: 'translateY(-50%)' };
+    }
+    
+    const cardHeight = 300; // Altura estimada do card
+    const spaceBelow = window.innerHeight - (highlightRect.top + highlightRect.height + 24);
+    
+    // Se não couber abaixo, posiciona acima
+    if (spaceBelow < cardHeight) {
+      return { 
+        top: `${highlightRect.top - cardHeight - 24}px` 
+      };
+    }
+    
+    // Posiciona abaixo normalmente
+    return { 
+      top: `${highlightRect.top + highlightRect.height + 24}px` 
+    };
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[9999]">
@@ -252,11 +274,20 @@ export default function OnboardingTour({ onComplete }) {
 
         {/* Tooltip/Card de Explicação */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+          className={cn(
+            "fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden",
+            // Se for welcome ou não houver elemento destacado, centraliza
+            (step.type === 'welcome' || !highlightRect) ? "top-1/2 -translate-y-1/2" : ""
+          )}
+          style={
+            highlightRect && step.type !== 'welcome' 
+              ? getCardPosition() 
+              : {}
+          }
         >
           {/* Progress Bar */}
           <div className="h-1.5 bg-gray-100">
