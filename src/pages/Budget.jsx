@@ -180,6 +180,7 @@ export default function Budget() {
       
       if (selectedBudget?.id) {
         StorageManager.updateBudget(selectedBudget.id, budgetData);
+        toast.success('Orçamento atualizado!', 'Seu planejamento foi atualizado com sucesso');
       } else {
         // Verificar se já existe orçamento para esta categoria neste mês
         const existing = budgets.find(b => 
@@ -196,8 +197,6 @@ export default function Budget() {
         StorageManager.addBudget(budgetData);
         createNotification.transactionAdded('expense', 'Orçamento criado com sucesso');
         toast.success('Orçamento criado!', 'Seu planejamento foi salvo com sucesso');
-      } else {
-        toast.success('Orçamento atualizado!', 'Seu planejamento foi atualizado com sucesso');
       }
       
       setModalOpen(false);
