@@ -1,22 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   X,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  Sparkles,
-  Target,
-  Wallet,
-  CreditCard,
-  TrendingUp,
-  BarChart3,
-  Settings,
-  ArrowRight,
-  Plus,
-  Minus
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -110,8 +99,14 @@ export default function OnboardingTour({ onComplete }) {
       updateHighlight(step.element);
     }
 
-    window.addEventListener('resize', () => updateHighlight(step.element));
-    return () => window.removeEventListener('resize', () => updateHighlight(step.element));
+    const handleResize = () => {
+      if (step.element) {
+        updateHighlight(step.element);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [currentStep, isActive]);
 
   const updateHighlight = (elementId) => {
@@ -125,6 +120,8 @@ export default function OnboardingTour({ onComplete }) {
           width: rect.width,
           height: rect.height
         });
+      } else {
+        setHighlightRect(null);
       }
     }, 100);
   };
@@ -143,19 +140,19 @@ export default function OnboardingTour({ onComplete }) {
     }
   };
 
-  const handleSkip = async () => {
-    await saveProgress(tourSteps.length);
+  const handleSkip = () => {
+    saveProgress(tourSteps.length);
     setIsActive(false);
     onComplete?.();
   };
 
-  const handleComplete = async () => {
-    await saveProgress(tourSteps.length);
+  const handleComplete = () => {
+    saveProgress(tourSteps.length);
     setIsActive(false);
     onComplete?.();
   };
 
-  const saveProgress = async (step) => {
+  const saveProgress = (step) => {
     try {
       localStorage.setItem('onboardingCompleted', step >= tourSteps.length ? 'true' : 'false');
       localStorage.setItem('onboarding_step', step.toString());
@@ -169,223 +166,170 @@ export default function OnboardingTour({ onComplete }) {
   const step = tourSteps[currentStep];
   const progress = ((currentStep + 1) / tourSteps.length) * 100;
 
-  // Calcular posição do card considerando altura da tela
+  // Calcular posição do card
   const getCardPosition = () => {
     if (step.type === 'welcome' || !highlightRect) {
       return { top: '50%', transform: 'translateY(-50%)' };
     }
     
-    const cardHeight = 300; // Altura estimada do card
+    const cardHeight = 300;
     const spaceBelow = window.innerHeight - (highlightRect.top + highlightRect.height + 24);
     
-    // Se não couber abaixo, posiciona acima
     if (spaceBelow < cardHeight) {
       return { 
         top: `${highlightRect.top - cardHeight - 24}px` 
       };
     }
     
-    // Posiciona abaixo normalmente
     return { 
       top: `${highlightRect.top + highlightRect.height + 24}px` 
     };
   };
 
-  if (!isActive || currentStep >= tourSteps.length) return null;
-
-  const step = tourSteps[currentStep];
-  const progress = ((currentStep + 1) / tourSteps.length) * 100;
-
   return (
-    <AnimatePresence mode="wait">
-      {isActive && currentStep < tourSteps.length && (
-        <motion.div
-          key="onboarding-container"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[9999]"
+    <div className="fixed inset-0 z-[9999]">
+      {/* Overlay Escuro */}
+      <div
+        className="absolute inset-0 bg-black/75"
+        onClick={handleSkip}
+      />
+
+      {/* Spotlight - recorte iluminado no elemento destacado */}
+      {highlightRect && step.type === 'highlight' && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: highlightRect.top - 8,
+            left: highlightRect.left - 8,
+            width: highlightRect.width + 16,
+            height: highlightRect.height + 16,
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
+            borderRadius: '12px',
+            border: '3px solid #00D68F',
+            zIndex: 10000
+          }}
+        />
+      )}
+
+      {/* Seta apontando */}
+      {highlightRect && step.showArrow && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: highlightRect.top - 60,
+            left: highlightRect.left + highlightRect.width / 2 - 20,
+            zIndex: 10001
+          }}
         >
-          {/* Overlay Escuro */}
-          <div
-            className="absolute inset-0 bg-black/75 transition-opacity"
-            onClick={handleSkip}
-          />
-
-          {/* Spotlight - recorte iluminado no elemento destacado */}
-          {highlightRect && step.type === 'highlight' && (
-            <>
-              <motion.div
-                key={`spotlight-${currentStep}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute pointer-events-none"
-                style={{
-                  top: highlightRect.top - 8,
-                  left: highlightRect.left - 8,
-                  width: highlightRect.width + 16,
-                  height: highlightRect.height + 16,
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
-                  borderRadius: '12px',
-                  border: '3px solid #00D68F',
-                  zIndex: 10000
-                }}
-              />
-              
-              {step.showPulse && (
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.5, 0.8, 0.5]
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute pointer-events-none"
-                  style={{
-                    top: highlightRect.top - 8,
-                    left: highlightRect.left - 8,
-                    width: highlightRect.width + 16,
-                    height: highlightRect.height + 16,
-                    borderRadius: '12px',
-                    border: '3px solid #00D68F',
-                    zIndex: 9999
-                  }}
-                />
-              )}
-            </>
-          )}
-
-          {/* Seta apontando */}
-          {highlightRect && step.showArrow && (
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute pointer-events-none"
-              style={{
-                top: highlightRect.top - 60,
-                left: highlightRect.left + highlightRect.width / 2 - 20,
-                zIndex: 10001
-              }}
-            >
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <path
-                  d="M20 35 L20 10 M20 10 L12 18 M20 10 L28 18"
-                  stroke="#00D68F"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </motion.div>
-          )}
-
-          {/* Tooltip/Card de Explicação */}
-          <motion.div
-            key={`step-${currentStep}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className={cn(
-              "fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden",
-              // Se for welcome ou não houver elemento destacado, centraliza
-              (step.type === 'welcome' || !highlightRect) ? "top-1/2 -translate-y-1/2" : ""
-            )}
-            style={
-              highlightRect && step.type !== 'welcome' 
-                ? getCardPosition() 
-                : {}
-            }
-          >
-          {/* Progress Bar */}
-          <div className="h-1.5 bg-gray-100">
-            <motion.div 
-              className="h-full bg-gradient-to-r from-[#00D68F] to-[#00B578]"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path
+              d="M20 35 L20 10 M20 10 L12 18 M20 10 L28 18"
+              stroke="#00D68F"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
+          </svg>
+        </div>
+      )}
+
+      {/* Tooltip/Card de Explicação */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={cn(
+          "fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden",
+          (step.type === 'welcome' || !highlightRect) ? "top-1/2 -translate-y-1/2" : ""
+        )}
+        style={
+          highlightRect && step.type !== 'welcome' 
+            ? getCardPosition() 
+            : {}
+        }
+      >
+        {/* Progress Bar */}
+        <div className="h-1.5 bg-gray-100">
+          <motion.div 
+            className="h-full bg-gradient-to-r from-[#00D68F] to-[#00B578]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+
+        <div className="p-6">
+          {/* Close button */}
+          <button
+            onClick={handleSkip}
+            className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Step counter */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-medium text-gray-500">
+              Etapa {currentStep + 1} de {tourSteps.length}
+            </span>
+            <span className="text-xs font-medium text-[#00D68F]">
+              {progress.toFixed(0)}% completo
+            </span>
           </div>
 
-          <div className="p-6">
-            {/* Close button */}
-            <button
-              onClick={handleSkip}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          {/* Content */}
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {step.title}
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              {step.description}
+            </p>
+          </div>
 
-            {/* Step counter */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium text-gray-500">
-                Etapa {currentStep + 1} de {tourSteps.length}
-              </span>
-              <span className="text-xs font-medium text-[#00D68F]">
-                {progress.toFixed(0)}% completo
-              </span>
-            </div>
-
-            {/* Content */}
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {step.title}
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                {step.description}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex gap-2">
-                {currentStep > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePrevious}
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Anterior
-                  </Button>
-                )}
-                
+          {/* Actions */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex gap-2">
+              {currentStep > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleSkip}
-                  className="text-gray-500"
+                  onClick={handlePrevious}
                 >
-                  Pular tour
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Anterior
                 </Button>
-              </div>
-
+              )}
+              
               <Button
-                onClick={handleNext}
-                className="bg-gradient-to-r from-[#00D68F] to-[#00B578] hover:from-[#00B578] hover:to-[#00D68F]"
+                variant="ghost"
+                size="sm"
+                onClick={handleSkip}
+                className="text-gray-500"
               >
-                {currentStep === tourSteps.length - 1 ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Concluir
-                  </>
-                ) : (
-                  <>
-                    {step.action || 'Próximo'}
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
+                Pular tour
               </Button>
             </div>
+
+            <Button
+              onClick={handleNext}
+              className="bg-gradient-to-r from-[#00D68F] to-[#00B578] hover:from-[#00B578] hover:to-[#00D68F]"
+            >
+              {currentStep === tourSteps.length - 1 ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Concluir
+                </>
+              ) : (
+                <>
+                  {step.action || 'Próximo'}
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </>
+              )}
+            </Button>
           </div>
-        </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+      </motion.div>
+    </div>
   );
 }
