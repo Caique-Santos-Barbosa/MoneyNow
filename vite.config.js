@@ -5,6 +5,12 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Define explicitamente a URL da API
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(
+      'https://projetos-pessoais-moneynow-backend.mqtl34.easypanel.host/api'
+    )
+  },
   server: {
     allowedHosts: true,
     proxy: {
