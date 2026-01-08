@@ -29,8 +29,10 @@ import {
 } from "@/components/ui/popover";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Loader2, Plus } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus, Wallet, CreditCard } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import AccountModal from './AccountModal';
+import CardModal from './CardModal';
 
 export default function TransactionModal({ 
   isOpen, 
@@ -52,6 +54,8 @@ export default function TransactionModal({
   const [defaultCategories, setDefaultCategories] = useState([]);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', icon: '💸', color: '#6b7280' });
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -266,7 +270,7 @@ export default function TransactionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="p-6 pb-0">
           <Tabs value={type} onValueChange={setType} className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-gray-100">
@@ -351,55 +355,126 @@ export default function TransactionModal({
             <>
               <div className="space-y-2">
                 <Label>Conta ou Cartão</Label>
-                <Select 
-                  value={formData.card_id || formData.account_id}
-                  onValueChange={(value) => {
-                    const isCard = cards.some(c => c.id === value);
-                    if (isCard) {
-                      setFormData({ ...formData, card_id: value, account_id: '' });
-                    } else {
-                      setFormData({ ...formData, account_id: value, card_id: '' });
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma conta ou cartão" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">Contas</div>
-                        {accounts.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: account.color }}
-                              />
-                              {account.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                    {type === 'expense' && cards.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">Cartões</div>
-                        {cards.map((card) => (
-                          <SelectItem key={card.id} value={card.id}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: card.color }}
-                              />
-                              {card.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
+                {type === 'expense' ? (
+                  <Select 
+                    value={formData.account_id || formData.card_id} 
+                    onValueChange={(value) => {
+                      if (value === 'add_account') {
+                        setShowAccountModal(true);
+                      } else if (value === 'add_card') {
+                        setShowCardModal(true);
+                      } else if (accounts.some(a => a.id === value)) {
+                        setFormData({...formData, account_id: value, card_id: ''});
+                      } else if (cards.some(c => c.id === value)) {
+                        setFormData({...formData, card_id: value, account_id: ''});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione conta ou cartão" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.length === 0 && cards.length === 0 && (
+                        <div className="p-3 text-sm text-gray-500 text-center">
+                          Você ainda não tem contas ou cartões cadastrados
+                        </div>
+                      )}
+                      
+                      {accounts.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">CONTAS</div>
+                          {accounts.map(account => (
+                            <SelectItem key={account.id} value={account.id}>
+                              <div className="flex items-center gap-2">
+                                <Wallet className="w-4 h-4" />
+                                {account.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      
+                      {cards.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1">CARTÕES</div>
+                          {cards.map(card => (
+                            <SelectItem key={card.id} value={card.id}>
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="w-4 h-4" />
+                                {card.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      
+                      <div className="border-t my-1" />
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowAccountModal(true);
+                        }}
+                        className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar conta
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowCardModal(true);
+                        }}
+                        className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar cartão
+                      </button>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select 
+                    value={formData.account_id} 
+                    onValueChange={(value) => {
+                      if (value === 'add_account') {
+                        setShowAccountModal(true);
+                      } else {
+                        setFormData({...formData, account_id: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.length === 0 && (
+                        <div className="p-3 text-sm text-gray-500 text-center">
+                          Você ainda não tem contas cadastradas
+                        </div>
+                      )}
+                      
+                      {accounts.map(account => (
+                        <SelectItem key={account.id} value={account.id}>
+                          <div className="flex items-center gap-2">
+                            <Wallet className="w-4 h-4" />
+                            {account.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                      
+                      <div className="border-t my-1" />
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowAccountModal(true);
+                        }}
+                        className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar conta
+                      </button>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -527,27 +602,32 @@ export default function TransactionModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 -mx-6 px-6 flex gap-3 justify-end">
             <Button 
               type="button" 
               variant="outline" 
-              className="flex-1"
               onClick={onClose}
+              disabled={isLoading}
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
-              className={cn(
-                "flex-1",
-                type === 'expense' && "bg-[#FF5252] hover:bg-[#FF3333]",
-                type === 'income' && "bg-[#00D68F] hover:bg-[#00B578]",
-                type === 'transfer' && "bg-[#2196F3] hover:bg-[#1976D2]"
-              )}
               disabled={isLoading}
+              className={cn(
+                type === 'expense' && "bg-gradient-to-r from-[#FF5252] to-[#FF3333] hover:from-[#FF3333] hover:to-[#FF1A1A]",
+                type === 'income' && "bg-gradient-to-r from-[#00D68F] to-[#00B578] hover:from-[#00B578] hover:to-[#009966]",
+                type === 'transfer' && "bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0]"
+              )}
             >
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {transaction ? 'Salvar' : 'Criar'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                transaction ? 'Salvar' : 'Criar'
+              )}
             </Button>
           </div>
         </form>
@@ -614,6 +694,43 @@ export default function TransactionModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modais aninhados para criar conta/cartão */}
+      <AccountModal
+        isOpen={showAccountModal}
+        onClose={() => setShowAccountModal(false)}
+        onSuccess={() => {
+          // Recarregar contas
+          const accountsData = StorageManager.getAccounts();
+          setAccounts(accountsData);
+          
+          // Selecionar a conta recém-criada
+          const lastAccount = accountsData[accountsData.length - 1];
+          if (lastAccount) {
+            setFormData({...formData, account_id: lastAccount.id, card_id: ''});
+          }
+          
+          setShowAccountModal(false);
+        }}
+      />
+
+      <CardModal
+        isOpen={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onSuccess={() => {
+          // Recarregar cartões
+          const cardsData = StorageManager.getCards();
+          setCards(cardsData);
+          
+          // Selecionar o cartão recém-criado
+          const lastCard = cardsData[cardsData.length - 1];
+          if (lastCard) {
+            setFormData({...formData, card_id: lastCard.id, account_id: ''});
+          }
+          
+          setShowCardModal(false);
+        }}
+      />
     </Dialog>
   );
 }
