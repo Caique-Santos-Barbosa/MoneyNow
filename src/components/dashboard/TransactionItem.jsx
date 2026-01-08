@@ -125,7 +125,14 @@ export default function TransactionItem({
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>{category?.name || 'Sem categoria'}</span>
+          {category ? (
+            <span className="flex items-center gap-1">
+              {category.icon && <span>{category.icon}</span>}
+              <span>{category.name}</span>
+            </span>
+          ) : (
+            <span>Sem categoria</span>
+          )}
           <span>•</span>
           <span>{account?.name || transaction.account_id || 'Conta'}</span>
         </div>

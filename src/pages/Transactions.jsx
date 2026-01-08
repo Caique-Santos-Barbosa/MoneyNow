@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StorageManager } from '@/utils/storageManager';
+import { getCategoriesByType } from '@/data/defaultCategories';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -136,7 +137,13 @@ export default function Transactions() {
     }).format(value);
   };
 
-  const getCategoryById = (id) => categories.find(c => c.id === id);
+  const getCategoryById = (id, type = 'expense') => {
+    if (!id) return null;
+    
+    // Buscar nas categorias padrão + personalizadas
+    const allCategories = getCategoriesByType(type);
+    return allCategories.find(c => c.id === id) || null;
+  };
   const getAccountById = (id) => accounts.find(a => a.id === id);
 
   // Filter transactions
@@ -398,7 +405,7 @@ export default function Transactions() {
                     <TransactionItem 
                       key={transaction.id}
                       transaction={transaction}
-                      category={getCategoryById(transaction.category_id)}
+                      category={getCategoryById(transaction.category_id, transaction.type)}
                       account={getAccountById(transaction.account_id)}
                       onClick={() => setTransactionModal({ 
                         open: true, 

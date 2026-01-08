@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   User,
@@ -50,6 +50,16 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('preferences');
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Carregar foto do localStorage ao montar
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData.profile_photo) {
+      setProfilePhoto(userData.profile_photo);
+    }
+  }, []);
+  const [profilePhoto, setProfilePhoto] = useState(null);
   
   // Preferences
   const [preferences, setPreferences] = useState({
@@ -85,6 +95,66 @@ export default function Settings() {
     alert('Funcionalidade de salvar notificações será implementada em breve');
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem');
+      return;
+    }
+    
+    // Validar tamanho (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Imagem muito grande. Tamanho máximo: 2MB');
+      return;
+    }
+    
+    setIsUploadingPhoto(true);
+    
+    // Converter para base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result;
+      
+      // Salvar no estado
+      setProfilePhoto(base64);
+      
+      // Salvar no localStorage
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      userData.profile_photo = base64;
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setIsUploadingPhoto(false);
+      
+      // Mostrar sucesso
+      alert('Foto atualizada com sucesso!');
+      
+      // Recarregar para atualizar todos os avatares
+      setTimeout(() => window.location.reload(), 500);
+    };
+    
+    reader.onerror = () => {
+      alert('Erro ao carregar imagem');
+      setIsUploadingPhoto(false);
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setProfilePhoto(null);
+    
+    // Remover do localStorage
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    delete userData.profile_photo;
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    alert('Foto removida com sucesso!');
+    setTimeout(() => window.location.reload(), 500);
+  };
+
   const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   if (isLoading) {
@@ -101,71 +171,113 @@ export default function Settings() {
       {/* Header */}
       <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
 
-      {/* User Card */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-16 w-16 border-2 border-[#00D68F]/20">
-                {user?.profile_photo || profilePhoto ? (
+      {/* Profile Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Perfil</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Avatar com upload */}
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group">
+              <Avatar className="h-32 w-32 border-4 border-[#00D68F]/20">
+                {profilePhoto || user?.profile_photo ? (
                   <img 
-                    src={user?.profile_photo || profilePhoto} 
+                    src={profilePhoto || user?.profile_photo} 
                     alt={user?.name || 'Usuário'} 
-                    className="w-full h-full object-cover rounded-full" 
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-xl">
+                  <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-3xl font-medium">
                     {userInitials}
                   </AvatarFallback>
                 )}
               </Avatar>
+              
+              {/* Botão de editar sobre o avatar */}
+              <label
+                htmlFor="profile-photo-input"
+                className={cn(
+                  "absolute bottom-2 right-2 p-2.5 bg-[#00D68F] text-white rounded-full cursor-pointer hover:bg-[#00B578] transition-all shadow-lg",
+                  isUploadingPhoto && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {isUploadingPhoto ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Edit className="w-5 h-5" />
+                )}
+              </label>
+              
               <input
+                id="profile-photo-input"
                 type="file"
-                id="profile-photo"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    if (file.size > 2 * 1024 * 1024) {
-                      alert('Imagem muito grande. Máximo 2MB');
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      const base64 = reader.result;
-                      setProfilePhoto(base64);
-                      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-                      userData.profile_photo = base64;
-                      localStorage.setItem('user', JSON.stringify(userData));
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
+                onChange={handlePhotoChange}
+                disabled={isUploadingPhoto}
               />
-              <label
-                htmlFor="profile-photo"
-                className="absolute bottom-0 right-0 p-2 bg-[#00D68F] text-white rounded-full cursor-pointer hover:bg-[#00B578] transition-colors shadow-lg"
-              >
-                <Edit className="w-4 h-4" />
-              </label>
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-gray-900">{user?.name || 'Usuário'}</h2>
-              <p className="text-sm text-gray-500">{user?.email}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2"
-                onClick={() => document.getElementById('profile-photo').click()}
-              >
-                Alterar foto
-              </Button>
+            
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="text-xl font-semibold text-gray-900">{user?.name || 'Usuário'}</h3>
+              <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
+              
+              <div className="flex flex-wrap gap-2 mt-4 justify-center sm:justify-start">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => document.getElementById('profile-photo-input').click()}
+                  disabled={isUploadingPhoto}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Alterar foto
+                </Button>
+                
+                {(profilePhoto || user?.profile_photo) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRemovePhoto}
+                    disabled={isUploadingPhoto}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remover
+                  </Button>
+                )}
+              </div>
+              
+              <p className="text-xs text-gray-500 mt-3">
+                Formatos: JPG, PNG, GIF • Tamanho máximo: 2MB
+              </p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
+          </div>
+
+          {/* Separador */}
+          <div className="border-t pt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome completo</Label>
+              <Input
+                id="name"
+                value={user?.name || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                value={user?.email || ''}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-xs text-gray-500">
+                Email não pode ser alterado
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

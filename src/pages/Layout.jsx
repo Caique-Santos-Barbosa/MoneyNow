@@ -191,9 +191,17 @@ export default function Layout({ children, currentPageName }) {
             <div className="p-3 border-t border-gray-100 flex-shrink-0">
               <div className="flex items-center gap-3 p-2">
                 <Avatar className="h-10 w-10 border-2 border-[#00D68F]/20">
-                  <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white font-medium">
-                    {userInitials}
-                  </AvatarFallback>
+                  {user?.profile_photo ? (
+                    <img 
+                      src={user.profile_photo} 
+                      alt={user?.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white font-medium">
+                      {userInitials}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -265,9 +273,17 @@ export default function Layout({ children, currentPageName }) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2 px-2">
                       <Avatar className="h-8 w-8 border-2 border-[#00D68F]/20">
-                        <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-sm font-medium">
-                          {userInitials}
-                        </AvatarFallback>
+                        {user?.profile_photo ? (
+                          <img 
+                            src={user.profile_photo} 
+                            alt={user?.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-gradient-to-br from-[#00D68F] to-[#00B578] text-white text-sm font-medium">
+                            {userInitials}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
                     </Button>

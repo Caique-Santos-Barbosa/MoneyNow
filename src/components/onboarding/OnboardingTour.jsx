@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import {
   X,
@@ -166,88 +166,88 @@ export default function OnboardingTour({ onComplete }) {
   const step = tourSteps[currentStep];
   const progress = ((currentStep + 1) / tourSteps.length) * 100;
 
-  // Calcular posição do card
-  const getCardPosition = () => {
-    if (step.type === 'welcome' || !highlightRect) {
-      return { top: '50%', transform: 'translateY(-50%)' };
-    }
-    
-    const cardHeight = 300;
-    const spaceBelow = window.innerHeight - (highlightRect.top + highlightRect.height + 24);
-    
-    if (spaceBelow < cardHeight) {
-      return { 
-        top: `${highlightRect.top - cardHeight - 24}px` 
-      };
-    }
-    
-    return { 
-      top: `${highlightRect.top + highlightRect.height + 24}px` 
-    };
-  };
-
   return (
-    <div className="fixed inset-0 z-[9999]">
-      {/* Overlay Escuro */}
-      <div
-        className="absolute inset-0 bg-black/75"
-        onClick={handleSkip}
-      />
-
-      {/* Spotlight - recorte iluminado no elemento destacado */}
-      {highlightRect && step.type === 'highlight' && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: highlightRect.top - 8,
-            left: highlightRect.left - 8,
-            width: highlightRect.width + 16,
-            height: highlightRect.height + 16,
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
-            borderRadius: '12px',
-            border: '3px solid #00D68F',
-            zIndex: 10000
-          }}
-        />
-      )}
-
-      {/* Seta apontando */}
-      {highlightRect && step.showArrow && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: highlightRect.top - 60,
-            left: highlightRect.left + highlightRect.width / 2 - 20,
-            zIndex: 10001
-          }}
+    <AnimatePresence mode="wait">
+      {isActive && currentStep < tourSteps.length && (
+        <motion.div
+          key={`onboarding-${currentStep}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[9999]"
         >
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <path
-              d="M20 35 L20 10 M20 10 L12 18 M20 10 L28 18"
-              stroke="#00D68F"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-      )}
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75"
+            onClick={handleSkip}
+          />
 
-      {/* Tooltip/Card de Explicação */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={cn(
-          "fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden",
-          (step.type === 'welcome' || !highlightRect) ? "top-1/2 -translate-y-1/2" : ""
-        )}
-        style={
-          highlightRect && step.type !== 'welcome' 
-            ? getCardPosition() 
-            : {}
-        }
-      >
+          {/* Spotlight */}
+          {highlightRect && step.type === 'highlight' && (
+            <motion.div
+              key={`spotlight-${currentStep}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute pointer-events-none"
+              style={{
+                top: highlightRect.top - 8,
+                left: highlightRect.left - 8,
+                width: highlightRect.width + 16,
+                height: highlightRect.height + 16,
+                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
+                borderRadius: '12px',
+                border: '3px solid #00D68F',
+                zIndex: 10000
+              }}
+            />
+          )}
+
+          {/* Seta apontando */}
+          {highlightRect && step.showArrow && (
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="absolute pointer-events-none"
+              style={{
+                top: highlightRect.top - 60,
+                left: highlightRect.left + highlightRect.width / 2 - 20,
+                zIndex: 10001
+              }}
+            >
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <path
+                  d="M20 35 L20 10 M20 10 L12 18 M20 10 L28 18"
+                  stroke="#00D68F"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.div>
+          )}
+
+          {/* Card */}
+          <motion.div
+            key={`card-${currentStep}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            style={{
+              top: step.type === 'welcome' || !highlightRect 
+                ? '50%'
+                : `${Math.min(highlightRect.top + highlightRect.height + 24, window.innerHeight - 400)}px`,
+              transform: step.type === 'welcome' || !highlightRect
+                ? 'translate(-50%, -50%)'
+                : 'translateX(-50%)'
+            }}
+          >
         {/* Progress Bar */}
         <div className="h-1.5 bg-gray-100">
           <motion.div 
@@ -329,7 +329,9 @@ export default function OnboardingTour({ onComplete }) {
             </Button>
           </div>
         </div>
-      </motion.div>
-    </div>
+        </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
