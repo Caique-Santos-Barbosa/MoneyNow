@@ -129,6 +129,12 @@ export default function ImportModal({ isOpen, onClose, accounts, cards, onSucces
     
     try {
       const user = await base44.auth.me();
+      
+      if (!user || !user?.email) {
+        setError('Usuário não autenticado');
+        return;
+      }
+      
       const categories = await base44.entities.Category.list();
       
       let imported = 0;

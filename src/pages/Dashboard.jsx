@@ -42,7 +42,10 @@ import PremiumRequiredModal from '@/components/premium/PremiumRequiredModal';
 import { usePremiumCheck } from '@/components/hooks/usePremiumCheck';
 
 export default function Dashboard() {
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    const completed = localStorage.getItem('onboardingCompleted');
+    return !completed; // Mostra se ainda não completou
+  });
   const [premiumModal, setPremiumModal] = useState({ open: false, title: '', message: '' });
   const { isPremium, checkLimit } = usePremiumCheck();
   const [isLoading, setIsLoading] = useState(true);
@@ -93,16 +96,27 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Mostrar onboarding para usuários novos
-    if (user && !user.onboarding_completed) {
+    // Verificar se o onboarding já foi completado no localStorage
+    const completed = localStorage.getItem('onboardingCompleted');
+    if (!completed) {
       setShowOnboarding(true);
     }
-  }, [user]);
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const userData = await base44.auth.me();
+      
+      if (!userData || !userData?.email) {
+        setUser(null);
+        setAccounts([]);
+        setCards([]);
+        setTransactions([]);
+        setCategories([]);
+        return;
+      }
+      
       setUser(userData);
       
       // CRÍTICO: Filtrar TODOS os dados por created_by para isolar dados entre usuários
@@ -233,7 +247,10 @@ export default function Dashboard() {
     <div className="space-y-6 pb-20 lg:pb-6">
       {/* Onboarding Tour */}
       {showOnboarding && (
-        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
+        <OnboardingTour onComplete={() => {
+          localStorage.setItem('onboardingCompleted', 'true');
+          setShowOnboarding(false);
+        }} />
       )}
       {/* Trial Banner */}
       {isInTrial && (

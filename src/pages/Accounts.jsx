@@ -70,6 +70,12 @@ export default function Accounts() {
     setIsLoading(true);
     try {
       const user = await base44.auth.me();
+      
+      if (!user || !user?.email) {
+        setAccounts([]);
+        return;
+      }
+      
       // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
       const data = await base44.entities.Account.filter({ created_by: user.email });
       setAccounts(data || []);

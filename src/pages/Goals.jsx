@@ -112,6 +112,12 @@ export default function Goals() {
     setIsLoading(true);
     try {
       const user = await base44.auth.me();
+      
+      if (!user || !user?.email) {
+        setGoals([]);
+        return;
+      }
+      
       // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
       const data = await base44.entities.Goal.filter({ created_by: user.email });
       setGoals(data || []);

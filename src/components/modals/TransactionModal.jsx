@@ -71,6 +71,13 @@ export default function TransactionModal({
     try {
       const user = await base44.auth.me();
       
+      if (!user || !user?.email) {
+        if (!propAccounts) setAccounts([]);
+        if (!propCards) setCards([]);
+        if (!propCategories) setCategories([]);
+        return;
+      }
+      
       if (!propAccounts) {
         const accountsData = await base44.entities.Account.filter({ created_by: user.email });
         setAccounts(accountsData || []);

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -158,10 +157,8 @@ export default function OnboardingTour({ onComplete }) {
 
   const saveProgress = async (step) => {
     try {
-      await base44.auth.updateMe({
-        onboarding_step: step,
-        onboarding_completed: step >= tourSteps.length
-      });
+      localStorage.setItem('onboardingCompleted', step >= tourSteps.length ? 'true' : 'false');
+      localStorage.setItem('onboarding_step', step.toString());
     } catch (error) {
       console.error('Error saving onboarding progress:', error);
     }

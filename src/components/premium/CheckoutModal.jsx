@@ -54,16 +54,25 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
   const checkPremiumStatus = async () => {
     try {
       const userData = await base44.auth.me();
+      
+      if (!userData) {
+        setUser(null);
+        setIsPremium(false);
+        return;
+      }
+      
       setUser(userData);
       
       const isCurrentlyPremium = 
-        userData.is_premium && 
-        userData.premium_expires_at && 
+        userData?.is_premium && 
+        userData?.premium_expires_at && 
         new Date(userData.premium_expires_at) > new Date();
       
       setIsPremium(isCurrentlyPremium);
     } catch (error) {
       console.error('Error checking premium status:', error);
+      setUser(null);
+      setIsPremium(false);
     }
   };
 
@@ -215,11 +224,11 @@ export default function CheckoutModal({ isOpen, onClose, onSuccess }) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Válida até:</span>
                       <span className="text-lg font-bold text-[#6C40D9]">
-                        {new Date(user?.premium_expires_at).toLocaleDateString('pt-BR', {
+                        {user?.premium_expires_at ? new Date(user.premium_expires_at).toLocaleDateString('pt-BR', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric'
-                        })}
+                        }) : 'N/A'}
                       </span>
                     </div>
                   </div>

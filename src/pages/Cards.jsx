@@ -66,6 +66,12 @@ export default function Cards() {
     setIsLoading(true);
     try {
       const user = await base44.auth.me();
+      
+      if (!user || !user?.email) {
+        setCards([]);
+        return;
+      }
+      
       // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
       const data = await base44.entities.Card.filter({ created_by: user.email });
       setCards(data || []);

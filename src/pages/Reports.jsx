@@ -45,6 +45,12 @@ export default function Reports() {
     try {
       const user = await base44.auth.me();
       
+      if (!user || !user?.email) {
+        setTransactions([]);
+        setCategories([]);
+        return;
+      }
+      
       // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
       const [transactionsData, categoriesData] = await Promise.all([
         base44.entities.Transaction.filter({ created_by: user.email }, '-date', 1000),

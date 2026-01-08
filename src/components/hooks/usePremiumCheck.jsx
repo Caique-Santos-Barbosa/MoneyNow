@@ -20,16 +20,23 @@ export function usePremiumCheck() {
   const checkPremium = async () => {
     try {
       const userData = await base44.auth.me();
+      
+      if (!userData) {
+        setUser(null);
+        setIsPremium(false);
+        return;
+      }
+      
       setUser(userData);
       
       // Verifica se está em trial válido
-      if (userData.trial_ends_at && new Date(userData.trial_ends_at) > new Date()) {
+      if (userData?.trial_ends_at && new Date(userData.trial_ends_at) > new Date()) {
         setIsPremium(true);
         return;
       }
       
       // Verifica se tem premium ativo
-      if (userData.is_premium && userData.premium_expires_at && new Date(userData.premium_expires_at) > new Date()) {
+      if (userData?.is_premium && userData?.premium_expires_at && new Date(userData.premium_expires_at) > new Date()) {
         setIsPremium(true);
         return;
       }
@@ -48,23 +55,28 @@ export function usePremiumCheck() {
 
     try {
       const userData = await base44.auth.me();
+      
+      if (!userData || !userData?.email) {
+        return { allowed: false, current: 0, limit: 0 };
+      }
+      
       let current = 0;
 
       if (resource === 'accounts') {
         const accounts = await base44.entities.Account.filter({ created_by: userData.email });
-        current = accounts.length;
+        current = accounts?.length || 0;
       } else if (resource === 'cards') {
         const cards = await base44.entities.Card.filter({ created_by: userData.email });
-        current = cards.length;
+        current = cards?.length || 0;
       } else if (resource === 'goals') {
         const goals = await base44.entities.Goal.filter({ created_by: userData.email });
-        current = goals.length;
+        current = goals?.length || 0;
       } else if (resource === 'customCategories') {
         const categories = await base44.entities.Category.filter({ 
           created_by: userData.email,
           is_system: false 
         });
-        current = categories.length;
+        current = categories?.length || 0;
       }
 
       const limit = FREE_LIMITS[resource] || Infinity;

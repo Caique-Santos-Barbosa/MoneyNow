@@ -181,6 +181,18 @@ export default function Register() {
         throw new Error(data.message || data.error || 'Erro ao criar conta');
       }
 
+      // Validar que os dados obrigatórios existem
+      if (!data.token) {
+        throw new Error('Token não recebido do servidor');
+      }
+      if (!data.user) {
+        throw new Error('Dados do usuário não recebidos do servidor');
+      }
+
+      // Salvar token e user no localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
       // Redirecionar para login
       navigate('/Login?registered=true');
 

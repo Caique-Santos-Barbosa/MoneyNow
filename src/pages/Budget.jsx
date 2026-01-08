@@ -68,6 +68,14 @@ export default function Budget() {
     setIsLoading(true);
     try {
       const user = await base44.auth.me();
+      
+      if (!user || !user?.email) {
+        setBudgets([]);
+        setCategories([]);
+        setTransactions([]);
+        return;
+      }
+      
       const month = currentMonth.getMonth() + 1;
       const year = currentMonth.getFullYear();
       
@@ -175,6 +183,10 @@ export default function Budget() {
   const copyPreviousMonth = async () => {
     const prevMonth = subMonths(currentMonth, 1);
     const user = await base44.auth.me();
+    
+    if (!user || !user?.email) {
+      return;
+    }
     
     // CRÍTICO: Filtrar por created_by
     const prevBudgets = await base44.entities.Budget.filter({
