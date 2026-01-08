@@ -252,19 +252,11 @@ export default function OnboardingTour({ onComplete }) {
 
         {/* Tooltip/Card de Explicação */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className={cn(
-            "absolute bg-white rounded-2xl shadow-2xl overflow-hidden z-[10002]",
-            step.type === 'welcome' ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4" :
-            highlightRect ? 
-              (highlightRect.top > window.innerHeight / 2 
-                ? "bottom-[calc(100vh-" + (highlightRect.top - 20) + "px)]" 
-                : "top-[calc(" + (highlightRect.top + highlightRect.height + 20) + "px)]") +
-              " left-1/2 -translate-x-1/2 w-full max-w-md mx-4"
-            : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4"
-          )}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden"
         >
           {/* Progress Bar */}
           <div className="h-1.5 bg-gray-100">
