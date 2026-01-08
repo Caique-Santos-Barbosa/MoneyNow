@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Wallet,
@@ -47,48 +47,10 @@ const navigation = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      setUser(userData);
-    } catch (error) {
-      console.error('Error loading user:', error);
-      // Com requiresAuth: false, não redireciona automaticamente
-      // A aplicação continua funcionando mesmo sem usuário autenticado
-      setUser(null);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      // Limpar token e usuário do localStorage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      
-      // Tentar logout do Base44 se ainda estiver configurado
-      try {
-    await base44.auth.logout();
-      } catch (error) {
-        // Ignorar erro se Base44 não estiver disponível
-      }
-      
-      // Redirecionar para login
-      window.location.href = '/Login';
-    } catch (error) {
-      console.error('Error logging out:', error);
-      // Mesmo com erro, limpar estado local e redirecionar
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      window.location.href = '/Login';
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const getGreeting = () => {
@@ -99,7 +61,8 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const greeting = getGreeting();
-  const userInitials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+  const userName = user?.name || 'Usuário';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   // Pages without layout
   if (['Login', 'Register', 'Onboarding'].includes(currentPageName)) {
@@ -197,7 +160,7 @@ export default function Layout({ children, currentPageName }) {
           </nav>
 
           {/* Premium CTA */}
-          {!user?.is_premium && (
+          {false && !user?.is_premium && (
             <div className="p-3">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-[#6C40D9] to-[#5432B8] text-white">
                 <div className="flex items-center gap-2 mb-2">
@@ -227,7 +190,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.full_name || 'Usuário'}
+                    {user?.name || 'Usuário'}
                   </p>
                   {user?.is_premium && <PremiumBadge size="xs" />}
                 </div>
@@ -257,7 +220,7 @@ export default function Layout({ children, currentPageName }) {
               
               <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold text-gray-900">
-                  {greeting.text}, {user?.full_name?.split(' ')[0] || 'Usuário'}! {greeting.emoji}
+                  {greeting.text}, {user?.name?.split(' ')[0] || 'Usuário'}! {greeting.emoji}
                 </h1>
               </div>
             </div>
@@ -285,7 +248,7 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.full_name}</p>
+                    <p className="text-sm font-medium">{user?.name || 'Usuário'}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />

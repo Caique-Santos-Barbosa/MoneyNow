@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   User,
   Bell,
@@ -45,8 +45,7 @@ import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('preferences');
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
   
@@ -68,43 +67,23 @@ export default function Settings() {
     notifyPartnerships: false
   });
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    setIsLoading(true);
-    try {
-      const userData = await base44.auth.me();
-      setUser(userData);
-    } catch (error) {
-      console.error('Error loading user:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await base44.auth.logout();
+  const handleLogout = () => {
+    logout();
   };
 
   const handleSavePreferences = async () => {
-    try {
-      await base44.auth.updateMe({ preferences });
-    } catch (error) {
-      console.error('Error saving preferences:', error);
-    }
+    // TODO: Implementar endpoint de atualização de preferências no backend
+    console.log('Preferências:', preferences);
+    alert('Funcionalidade de salvar preferências será implementada em breve');
   };
 
   const handleSaveNotifications = async () => {
-    try {
-      await base44.auth.updateMe({ notifications });
-    } catch (error) {
-      console.error('Error saving notifications:', error);
-    }
+    // TODO: Implementar endpoint de atualização de notificações no backend
+    console.log('Notificações:', notifications);
+    alert('Funcionalidade de salvar notificações será implementada em breve');
   };
 
-  const userInitials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+  const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   if (isLoading) {
     return (
@@ -130,7 +109,7 @@ export default function Settings() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-gray-900">{user?.full_name}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{user?.name || 'Usuário'}</h2>
               <p className="text-sm text-gray-500">{user?.email}</p>
             </div>
             <Button variant="outline" onClick={handleLogout}>
