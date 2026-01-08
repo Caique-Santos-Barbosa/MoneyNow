@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
+import GoalModal from '@/components/modals/GoalModal';
 import { format, differenceInMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -108,18 +109,10 @@ export default function Goals() {
     loadGoals();
   }, []);
 
-  const loadGoals = async () => {
+  const loadGoals = () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
-      
-      if (!user || !user?.email) {
-        setGoals([]);
-        return;
-      }
-      
-      // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
-      const data = await base44.entities.Goal.filter({ created_by: user.email });
+      const data = StorageManager.getGoals();
       setGoals(data || []);
     } catch (error) {
       console.error('Error loading goals:', error);
@@ -128,10 +121,10 @@ export default function Goals() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteDialog.goal) return;
     try {
-      await base44.entities.Goal.delete(deleteDialog.goal.id);
+      StorageManager.deleteGoal(deleteDialog.goal.id);
       setDeleteDialog({ open: false, goal: null });
       loadGoals();
     } catch (error) {
@@ -724,7 +717,7 @@ function AddAmountModal({ isOpen, onClose, goal, onSuccess }) {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!goal) return;
     
@@ -733,7 +726,7 @@ function AddAmountModal({ isOpen, onClose, goal, onSuccess }) {
       const addedAmount = parseFloat(amount.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
       const newAmount = (goal.current_amount || 0) + addedAmount;
       
-      await base44.entities.Goal.update(goal.id, {
+      StorageManager.updateGoal(goal.id, {
         current_amount: newAmount,
         is_achieved: newAmount >= goal.target_amount
       });

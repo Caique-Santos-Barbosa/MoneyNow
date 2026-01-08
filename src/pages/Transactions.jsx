@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -74,31 +74,20 @@ export default function Transactions() {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
+      const transactionsData = StorageManager.getTransactions();
+      const accountsData = StorageManager.getAccounts();
+      const cardsData = StorageManager.getCards();
       
-      if (!user || !user?.email) {
-        setTransactions([]);
-        setAccounts([]);
-        setCards([]);
-        setCategories([]);
-        return;
-      }
-      
-      // CRÍTICO: Filtrar TODOS os dados por created_by para isolar dados entre usuários
-      const [transactionsData, accountsData, cardsData, categoriesData] = await Promise.all([
-        base44.entities.Transaction.filter({ created_by: user.email }, '-date', 200),
-        base44.entities.Account.filter({ created_by: user.email }),
-        base44.entities.Card.filter({ created_by: user.email }),
-        base44.entities.Category.list() // Categorias do sistema são compartilhadas
-      ]);
+      // Ordenar transações por data (mais recentes primeiro)
+      transactionsData.sort((a, b) => new Date(b.date) - new Date(a.date));
       
       setTransactions(transactionsData || []);
       setAccounts(accountsData || []);
       setCards(cardsData || []);
-      setCategories(categoriesData || []);
+      setCategories([]); // Categorias vêm do defaultCategories agora
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -106,10 +95,10 @@ export default function Transactions() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteDialog.transaction) return;
     try {
-      await base44.entities.Transaction.delete(deleteDialog.transaction.id);
+      StorageManager.deleteTransaction(deleteDialog.transaction.id);
       setDeleteDialog({ open: false, transaction: null });
       loadData();
     } catch (error) {
@@ -117,21 +106,21 @@ export default function Transactions() {
     }
   };
 
-  const handleMarkPaid = async (transaction) => {
+  const handleMarkPaid = (transaction) => {
     try {
-      await base44.entities.Transaction.update(transaction.id, { is_paid: true });
+      StorageManager.updateTransaction(transaction.id, { is_paid: true });
       loadData();
     } catch (error) {
       console.error('Error updating transaction:', error);
     }
   };
 
-  const handleDuplicate = async (transaction) => {
-    const { id, created_date, updated_date, created_by, ...data } = transaction;
+  const handleDuplicate = (transaction) => {
+    const { id, created_at, created_date, updated_date, created_by, ...data } = transaction;
     try {
-      await base44.entities.Transaction.create({
+      StorageManager.addTransaction({
         ...data,
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: new Date().toISOString(),
         is_paid: false
       });
       loadData();

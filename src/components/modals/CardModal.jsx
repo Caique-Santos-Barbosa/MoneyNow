@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
+import { createNotification } from '@/utils/notificationManager';
 import {
   Dialog,
   DialogContent,
@@ -86,12 +87,18 @@ export default function CardModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.name) {
+      alert('Preencha o nome do cartão');
+      return;
+    }
+    
     setIsLoading(true);
-
+    
     try {
       const limit = parseFloat(formData.limit.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
       
-      const data = {
+      const cardData = {
         name: formData.name,
         brand: formData.brand,
         last_digits: formData.last_digits,
@@ -100,19 +107,22 @@ export default function CardModal({
         due_day: parseInt(formData.due_day),
         color: formData.color,
         is_active: formData.is_active,
-        current_invoice: card?.current_invoice || 0
+        current_invoice: card?.current_invoice || card?.currentBill || 0,
+        currentBill: card?.current_invoice || card?.currentBill || 0
       };
-
+      
       if (card?.id) {
-        await base44.entities.Card.update(card.id, data);
+        StorageManager.updateCard(card.id, cardData);
       } else {
-        await base44.entities.Card.create(data);
+        StorageManager.addCard(cardData);
+        createNotification.transactionAdded('expense', 'Cartão criado com sucesso');
       }
-
+      
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('Error saving card:', error);
+      console.error('Error creating card:', error);
+      alert('Erro ao criar cartão');
     } finally {
       setIsLoading(false);
     }

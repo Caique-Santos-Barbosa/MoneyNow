@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
+import { createNotification } from '@/utils/notificationManager';
 import {
   Dialog,
   DialogContent,
@@ -81,33 +82,43 @@ export default function AccountModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.name || !formData.type) {
+      alert('Preencha nome e tipo da conta');
+      return;
+    }
+    
     setIsLoading(true);
-
+    
     try {
       const initialBalance = parseFloat(formData.initial_balance.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
       
-      const data = {
+      const accountData = {
         name: formData.name,
         type: formData.type,
+        bank_name: formData.bank || null,
         bank: formData.bank || null,
         initial_balance: initialBalance,
-        current_balance: account ? account.current_balance : initialBalance,
+        current_balance: account ? (account.current_balance || account.balance || initialBalance) : initialBalance,
+        balance: account ? (account.current_balance || account.balance || initialBalance) : initialBalance,
         color: formData.color,
         icon: formData.icon,
         include_in_total: formData.include_in_total,
         is_active: formData.is_active
       };
-
+      
       if (account?.id) {
-        await base44.entities.Account.update(account.id, data);
+        StorageManager.updateAccount(account.id, accountData);
       } else {
-        await base44.entities.Account.create(data);
+        StorageManager.addAccount(accountData);
+        createNotification.transactionAdded('income', 'Conta criada com sucesso');
       }
-
+      
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('Error saving account:', error);
+      console.error('Error creating account:', error);
+      alert('Erro ao criar conta');
     } finally {
       setIsLoading(false);
     }

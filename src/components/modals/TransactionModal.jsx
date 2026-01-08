@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { getCategoriesByType } from '@/data/defaultCategories';
+import { getCategoriesByType, addCustomCategory } from '@/data/defaultCategories';
 import { createNotification } from '@/utils/notificationManager';
+import { StorageManager } from '@/utils/storageManager';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Plus } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 export default function TransactionModal({ 
@@ -50,6 +51,8 @@ export default function TransactionModal({
   const [cards, setCards] = useState(propCards || []);
   const [categories, setCategories] = useState(propCategories || []);
   const [defaultCategories, setDefaultCategories] = useState([]);
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', icon: '💸', color: '#6b7280' });
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -65,12 +68,24 @@ export default function TransactionModal({
 
   // Load data if not provided
   useEffect(() => {
-    if (isOpen && (!propAccounts || !propCards || !propCategories)) {
-      loadData();
-    }
     // Carregar categorias padrão
     if (type !== 'transfer') {
       setDefaultCategories(getCategoriesByType(type));
+    }
+    
+    // Carregar contas e cartões do localStorage se não foram fornecidos
+    if (isOpen) {
+      if (!propAccounts) {
+        const storedAccounts = StorageManager.getAccounts();
+        setAccounts(storedAccounts);
+      }
+      if (!propCards) {
+        const storedCards = StorageManager.getCards();
+        setCards(storedCards);
+      }
+      if (!propCategories) {
+        setCategories([]);
+      }
     }
   }, [isOpen, type]);
 
@@ -138,44 +153,108 @@ export default function TransactionModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.description || !formData.amount) {
+      alert('Preencha descrição e valor');
+      return;
+    }
+    
+    if (type !== 'transfer' && !formData.category_id) {
+      alert('Selecione uma categoria');
+      return;
+    }
+    
+    if (type === 'transfer') {
+      if (!formData.account_id || !formData.target_account_id) {
+        alert('Selecione conta de origem e destino');
+        return;
+      }
+    } else if (type === 'expense' && !formData.card_id && !formData.account_id) {
+      alert('Selecione uma conta ou cartão');
+      return;
+    } else if (type === 'income' && !formData.account_id) {
+      alert('Selecione uma conta');
+      return;
+    }
+    
     setIsLoading(true);
-
+    
     try {
-      const data = {
+      // Converter valor para número
+      const amount = parseFloat(formData.amount.replace(/[^\d,.-]/g, '').replace(',', '.'));
+      
+      // Salvar no localStorage
+      const transactionData = {
         type,
         description: formData.description,
-        amount: parseFloat(formData.amount.replace(/[^\d,.-]/g, '').replace(',', '.')),
-        date: format(formData.date, 'yyyy-MM-dd'),
+        amount: amount,
+        date: formData.date.toISOString(),
         category_id: formData.category_id || null,
-        account_id: type !== 'transfer' ? (formData.account_id || formData.card_id || null) : formData.account_id,
-        card_id: type === 'expense' ? formData.card_id || null : null,
-        target_account_id: type === 'transfer' ? formData.target_account_id : null,
+        account_id: formData.account_id || null,
+        card_id: formData.card_id || null,
+        target_account_id: formData.target_account_id || null,
         is_paid: formData.is_paid,
-        notes: formData.notes || null,
-        tags: formData.tags
+        notes: formData.notes || null
       };
-
+      
       if (transaction?.id) {
-        await base44.entities.Transaction.update(transaction.id, data);
+        StorageManager.updateTransaction(transaction.id, transactionData);
       } else {
-        await base44.entities.Transaction.create(data);
+        StorageManager.addTransaction(transactionData);
         
-        // Gerar notificação ao criar transação
+        // Criar notificação
         const formattedValue = new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL'
-        }).format(data.amount);
+        }).format(amount);
         
         createNotification.transactionAdded(type, formattedValue);
       }
-
+      
+      // Resetar form
+      setFormData({
+        description: '',
+        amount: '',
+        date: new Date(),
+        category_id: '',
+        account_id: '',
+        card_id: '',
+        target_account_id: '',
+        is_paid: false,
+        notes: '',
+        tags: []
+      });
+      
       onSuccess?.();
       onClose();
+      
     } catch (error) {
-      console.error('Error saving transaction:', error);
+      console.error('Error creating transaction:', error);
+      alert('Erro ao criar transação. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCategoryChange = (value) => {
+    if (value === 'add_new') {
+      setShowNewCategoryModal(true);
+    } else {
+      setFormData({...formData, category_id: value});
+    }
+  };
+
+  const handleCreateCategory = () => {
+    if (!newCategory.name.trim()) {
+      alert('Digite um nome para a categoria');
+      return;
+    }
+    
+    const created = addCustomCategory(type, newCategory);
+    setDefaultCategories(getCategoriesByType(type));
+    setFormData({...formData, category_id: created.id});
+    setShowNewCategoryModal(false);
+    setNewCategory({ name: '', icon: '💸', color: '#6b7280' });
   };
 
   const formatCurrencyInput = (value) => {
@@ -336,7 +415,7 @@ export default function TransactionModal({
                 <Label>Categoria</Label>
                 <Select 
                   value={formData.category_id}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                  onValueChange={handleCategoryChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma categoria" />
@@ -359,6 +438,17 @@ export default function TransactionModal({
                         </div>
                       </SelectItem>
                     ))}
+                    <div className="border-t my-1" />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowNewCategoryModal(true);
+                      }}
+                      className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-2 text-[#00D68F] font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Criar nova categoria
+                    </button>
                   </SelectContent>
                 </Select>
               </div>
@@ -471,6 +561,68 @@ export default function TransactionModal({
           </div>
         </form>
       </DialogContent>
+
+      {/* Modal de Nova Categoria */}
+      <Dialog open={showNewCategoryModal} onOpenChange={setShowNewCategoryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome da categoria</Label>
+              <Input
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                placeholder="Ex: Educação online"
+              />
+            </div>
+            <div>
+              <Label>Emoji (ícone)</Label>
+              <div className="grid grid-cols-8 gap-2 p-3 border rounded-lg max-h-48 overflow-y-auto">
+                {['🍔', '🚗', '🏠', '🏥', '📚', '🎮', '🛒', '📄', '🐕', '🎁', '💸', '✈️', '🎬', '🏋️', '💻', '📱', '👕', '⚡', '🎨', '🎵', '📷', '☕', '🍕', '🌟', '💰', '🎓', '🚀', '💼', '🎯', '💡', '🔧', '🏆'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, icon: emoji})}
+                    className={cn(
+                      "text-2xl p-2 rounded hover:bg-gray-100 transition-colors",
+                      newCategory.icon === emoji && "bg-[#00D68F]/10 ring-2 ring-[#00D68F]"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Cor</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#14b8a6', '#f43f5e', '#a855f7'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewCategory({...newCategory, color})}
+                    className={cn(
+                      "w-10 h-10 rounded-lg transition-all",
+                      newCategory.color === color && "ring-2 ring-offset-2 ring-gray-900"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="outline" onClick={() => setShowNewCategoryModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCategory}>
+              Criar categoria
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

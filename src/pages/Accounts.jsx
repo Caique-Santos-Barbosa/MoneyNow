@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
 import {
   Plus,
   Eye,
@@ -66,18 +66,10 @@ export default function Accounts() {
     loadAccounts();
   }, []);
 
-  const loadAccounts = async () => {
+  const loadAccounts = () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
-      
-      if (!user || !user?.email) {
-        setAccounts([]);
-        return;
-      }
-      
-      // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
-      const data = await base44.entities.Account.filter({ created_by: user.email });
+      const data = StorageManager.getAccounts();
       setAccounts(data || []);
     } catch (error) {
       console.error('Error loading accounts:', error);
@@ -86,10 +78,10 @@ export default function Accounts() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteDialog.account) return;
     try {
-      await base44.entities.Account.delete(deleteDialog.account.id);
+      StorageManager.deleteAccount(deleteDialog.account.id);
       setDeleteDialog({ open: false, account: null });
       loadAccounts();
     } catch (error) {

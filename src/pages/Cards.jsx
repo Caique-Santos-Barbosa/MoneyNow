@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
 import {
   Plus,
   CreditCard,
@@ -62,18 +62,10 @@ export default function Cards() {
     loadCards();
   }, []);
 
-  const loadCards = async () => {
+  const loadCards = () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
-      
-      if (!user || !user?.email) {
-        setCards([]);
-        return;
-      }
-      
-      // CRÍTICO: Filtrar por created_by para isolar dados entre usuários
-      const data = await base44.entities.Card.filter({ created_by: user.email });
+      const data = StorageManager.getCards();
       setCards(data || []);
     } catch (error) {
       console.error('Error loading cards:', error);
@@ -82,10 +74,10 @@ export default function Cards() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteDialog.card) return;
     try {
-      await base44.entities.Card.delete(deleteDialog.card.id);
+      StorageManager.deleteCard(deleteDialog.card.id);
       setDeleteDialog({ open: false, card: null });
       loadCards();
     } catch (error) {

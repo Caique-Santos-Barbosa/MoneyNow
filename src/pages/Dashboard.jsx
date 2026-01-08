@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import { StorageManager } from '@/utils/storageManager';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
@@ -160,31 +161,32 @@ export default function Dashboard() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const userData = await base44.auth.me();
+      // Carregar dados do localStorage
+      const accountsData = StorageManager.getAccounts();
+      const cardsData = StorageManager.getCards();
+      const transactionsData = StorageManager.getTransactions();
       
-      if (!userData || !userData?.email) {
-        setUser(null);
-        setAccounts([]);
-        setCards([]);
-        setTransactions([]);
-        setCategories([]);
-        return;
-      }
-      
-      setUser(userData);
-      
-      // CRÍTICO: Filtrar TODOS os dados por created_by para isolar dados entre usuários
-      const [accountsData, cardsData, transactionsData, categoriesData] = await Promise.all([
-        base44.entities.Account.filter({ created_by: userData.email }),
-        base44.entities.Card.filter({ created_by: userData.email }),
-        base44.entities.Transaction.filter({ created_by: userData.email }, '-date', 50),
-        base44.entities.Category.list() // Categorias do sistema são compartilhadas
-      ]);
+      // Ordenar transações por data (mais recentes primeiro)
+      transactionsData.sort((a, b) => new Date(b.date) - new Date(a.date));
       
       setAccounts(accountsData || []);
       setCards(cardsData || []);
       setTransactions(transactionsData || []);
-      setCategories(categoriesData || []);
+      setCategories([]); // Categorias vêm do defaultCategories agora
+      
+      // Tentar carregar user do localStorage ou base44
+      try {
+        const userData = await base44.auth.me();
+        if (userData) {
+          setUser(userData);
+        }
+      } catch (error) {
+        // Se não conseguir do base44, usar dados do localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
