@@ -59,7 +59,6 @@ export default function Settings() {
       setProfilePhoto(userData.profile_photo);
     }
   }, []);
-  const [profilePhoto, setProfilePhoto] = useState(null);
   
   // Preferences
   const [preferences, setPreferences] = useState({
