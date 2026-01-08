@@ -37,6 +37,16 @@ export const api = {
       body: JSON.stringify(data),
     });
   },
+
+  async me(token = null) {
+    const authToken = token || localStorage.getItem('token');
+    return this.fetch('/auth/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+  },
 };
 
 export default api;

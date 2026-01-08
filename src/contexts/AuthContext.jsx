@@ -31,11 +31,7 @@ export function AuthProvider({ children }) {
           setIsLoading(false);
           
           // Tentar validar com backend em background (não bloquear)
-          fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
+          api.me(token)
           .then(response => {
             if (response.ok) {
               return response.json();
@@ -66,11 +62,7 @@ export function AuthProvider({ children }) {
 
       // Se não tem usuário salvo, tentar buscar do backend
       try {
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const response = await api.me(token);
 
         if (response.ok) {
           const data = await response.json();
