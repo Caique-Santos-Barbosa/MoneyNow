@@ -187,7 +187,7 @@ export default function OnboardingTour({ onComplete }) {
           />
 
           {/* Spotlight */}
-          {highlightRect && step.type === 'highlight' && (
+          {highlightRect && (step.type === 'highlight' || step.type === 'sidebar' || step.type === 'action') && (
             <motion.div
               key={`spotlight-${currentStep}`}
               initial={{ opacity: 0 }}
@@ -238,15 +238,84 @@ export default function OnboardingTour({ onComplete }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="fixed left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden"
-            style={{
-              top: step.type === 'welcome' || !highlightRect 
-                ? '50%'
-                : `${Math.min(highlightRect.top + highlightRect.height + 24, window.innerHeight - 400)}px`,
-              transform: step.type === 'welcome' || !highlightRect
-                ? 'translate(-50%, -50%)'
-                : 'translateX(-50%)'
-            }}
+            className="fixed w-[90vw] max-w-md z-[10002] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            style={(() => {
+              // Se for welcome ou não tiver highlight, centralizar completamente
+              if (step.type === 'welcome' || !highlightRect) {
+                return {
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)'
+                };
+              }
+
+              // Detectar se o elemento está na sidebar (menu lateral)
+              const isSidebarElement = highlightRect.left < 300; // Sidebar geralmente tem ~256px
+              const cardWidth = Math.min(90 * window.innerWidth / 100, 448); // max-w-md = 448px
+              const cardHeight = 300; // Altura estimada do card
+              
+              // Se está na sidebar, posicionar à direita da sidebar
+              if (isSidebarElement) {
+                const sidebarWidth = 256; // Largura padrão da sidebar
+                const spaceRight = window.innerWidth - highlightRect.left - highlightRect.width;
+                const spaceBelow = window.innerHeight - highlightRect.top - highlightRect.height;
+                const spaceAbove = highlightRect.top;
+                
+                // Tentar centralizar verticalmente com o elemento
+                let top = highlightRect.top + (highlightRect.height / 2) - (cardHeight / 2);
+                
+                // Se não couber acima, ajustar para baixo
+                if (top < 20) {
+                  top = highlightRect.top + highlightRect.height + 24;
+                }
+                
+                // Se não couber abaixo, ajustar para cima
+                if (top + cardHeight > window.innerHeight - 20) {
+                  top = highlightRect.top - cardHeight - 24;
+                }
+                
+                // Se ainda não couber, centralizar verticalmente na tela
+                if (top < 20) {
+                  top = (window.innerHeight - cardHeight) / 2;
+                }
+                
+                // Posicionar à direita da sidebar com margem
+                const left = sidebarWidth + 24;
+                
+                return {
+                  top: `${Math.max(20, Math.min(top, window.innerHeight - cardHeight - 20))}px`,
+                  left: `${left}px`,
+                  transform: 'none'
+                };
+              }
+              
+              // Para elementos no conteúdo principal, posicionar abaixo ou centralizar
+              const spaceBelow = window.innerHeight - (highlightRect.top + highlightRect.height) - 24;
+              const spaceAbove = highlightRect.top - 24;
+              
+              if (spaceBelow >= cardHeight) {
+                // Cabe abaixo
+                return {
+                  top: `${highlightRect.top + highlightRect.height + 24}px`,
+                  left: '50%',
+                  transform: 'translateX(-50%)'
+                };
+              } else if (spaceAbove >= cardHeight) {
+                // Cabe acima
+                return {
+                  top: `${highlightRect.top - cardHeight - 24}px`,
+                  left: '50%',
+                  transform: 'translateX(-50%)'
+                };
+              } else {
+                // Não cabe nem acima nem abaixo, centralizar na tela
+                return {
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)'
+                };
+              }
+            })()}
           >
         {/* Progress Bar */}
         <div className="h-1.5 bg-gray-100">
